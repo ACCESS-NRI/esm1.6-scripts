@@ -2,7 +2,7 @@
 
 A place for scripts related to ACCESS-ESM1.6.
 
-Modelled on https://github.com/COSIMA/om3-scripts
+Modelled on https://github.com/ACCESS-NRI/om3-scripts
 
 For now, this serves as a location for storing scripts that are useful for ACCESS-ESM1.6 that has no obvious other repository location. This is to prevent having multiple copies of the same script across configuration repos.
 
