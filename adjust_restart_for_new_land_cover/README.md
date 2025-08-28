@@ -8,7 +8,7 @@ The process is comprised of 3 scripts:
 2. [adjust_restart_for_new_land_cover.py](#adjust_restart_for_new_land_cover.py): performs the remapping of restart fields for the new vegetation map. Detailed description of the script below.
 3. [add_netcdf_fields_to_UM_restart.py](#add_netcdf_fields_to_UM_restart.py): take the generated NetCDF file from ```remap_vegetation.py``` and copy the variables into their respective restart fields.
 
-These are executed via ```run_remap.sh```. This script has placeholders for the required input/output names required for the process.
+These are executed via ```run_adjust_restart.sh```. This script has placeholders for the required input/output names required for the process.
 
 ## convert_UM_restart_to_netcdf.py
 
