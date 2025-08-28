@@ -282,7 +282,6 @@ def remap_vegetation(InputDataset, InputVegetation, OutputVegetation, Config):
             for Variable in PerTileVariables:
                 # Set incrementing value to 0
                 Total = 0.0
-                print(f"Converting variable {Variable}")
 
                 # We want to summate over all active tiles then average by the
                 # number of active tiles. In most cases, this only involves one
