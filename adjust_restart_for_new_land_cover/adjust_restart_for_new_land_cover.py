@@ -28,6 +28,12 @@ def _parse_args():
             help="New vegetation map to use"
             )
     parser.add_argument(
+            "--fill-all",
+            default=False,
+            action="store_true",
+            help="Whether to fill all tiles, or just new active tiles."
+            )
+    parser.add_argument(
             "-c",
             "--config",
             help="Config file to use for the remapping",
@@ -180,13 +186,18 @@ def find_active_tiles(SearchMask, InputVegetation, VegetationMapping):
         # greater than 1e-6, which is the value used for tiles that will become
         # active in future due to land use change
         TileSearchMap = ~numpy.isnan(InputVegetation[VegType, :, :]) &\
-                SearchMask & (InputVegetation[VegType, :, :] > 1e-7)
+                SearchMask & (InputVegetation[VegType, :, :] >= 1e-6)
 
         ActiveTileMasks.append(TileSearchMap)
 
     return ActiveTileMasks
 
-def remap_vegetation(InputDataset, InputVegetation, OutputVegetation, Config):
+def remap_vegetation(
+        InputDataset,
+        InputVegetation,
+        OutputVegetation,
+        FillAll,
+        Config):
     """Map the input vegetation to the output vegetation."""
 
     # Read in the variable mappings- needs number of vegetation types for map
@@ -211,24 +222,63 @@ def remap_vegetation(InputDataset, InputVegetation, OutputVegetation, Config):
     OutDataset['PREVIOUS YEAR SURF FRACTIONS (TILES)'] = \
         (('veg', 'lat', 'lon'), NewVegetation)
 
+    # We need to know which tiles to fill, and which to empty. This depends on
+    # what mode we're in: if --all is passed, then we fill all empty relevant
+    # tiles, otherwise only the new active tiles. Likewise, we need to which
+    # tiles to empty in the case where --all is not passed.
+    if FillAll:
+        # Everywhere not already filled by the existing tiles
+        TilesToFill = InputVegetation < 1e-6
+
+        # Don't need to empty anything
+        TilesToEmpty = numpy.full_like(InputVegetation, False, dtype=bool)
+
+    else:
+        # Only new tiles that have come into existence
+        TilesToFill = numpy.logical_and(
+                InputVegetation < 1e-6,
+                OutputVegetation >= 1e-6
+                )
+
+        # Tiles that have left existence
+        TilesToEmpty = numpy.logical_and(
+                InputVegetation >= 1e-6,
+                OutputVegetation < 1e-6
+                )
+
     # Perform the per-cell averaging
     # Apply a mask to the array, so we don't mess up our summations with
     # near-zero vegetation fractions
-    InputVegetation = numpy.ma.masked_less(InputVegetation, 1e-6)
+    MaskedInputVegetation = numpy.ma.masked_where(
+            numpy.logical_or(
+                InputVegetation < 1e-6,
+                numpy.isnan(InputVegetation)
+                ),
+            InputVegetation)
 
+    # And create 
     for Variable in PerCellVariables:
-        res = numpy.sum(InputDataset[Variable].to_numpy() * InputVegetation, axis=0)
-        OutDataset[Variable] = (
-                ('veg', 'lat', 'lon'),
-                numpy.repeat(res[numpy.newaxis, :, :], nOutputVeg, axis=0)
+        AreaWeightedMean = numpy.stack(
+                [numpy.sum(
+                    InputDataset[Variable].to_numpy() * MaskedInputVegetation,
+                    axis=0
+                    )] * nOutputVeg,
+                axis=0
                 )
+        
+        # Only apply the averaging process to tiles that don't already exist-
+        # do this by initially copying over the original fields, then writing
+        # over the tiles to fill
+        OutData = InputDataset[Variable].to_numpy()
+        OutData[TilesToFill] = AreaWeightedMean[TilesToFill]
+        OutData[TilesToEmpty] = 0
 
+        OutDataset[Variable] = (('veg', 'lat', 'lon'), OutData)
+        
     # Perform the per-tile averaging
-    # To only iterate over desired points, we can mask the array where the
-    # array is nan (which correspond to ocean points). Then use
-    # numpy.ma.ndenumerate to only iterate over the land points. This will
-    # include tiles with 0.0 vegetation fraction.
-    MaskedOutputVeg = numpy.ma.masked_invalid(OutputVegetation)
+    # To only iterate over desired points, we can mask the array where so that
+    # only TilesToFill are unmasked.
+    MaskedOutputVeg = numpy.ma.masked_array(OutputVegetation, mask=~(TilesToFill))
 
     # At each point, we're going to use a new mask to assist the search. But we
     # don't want to allocate a new array every point- initialise a mask here,
@@ -250,8 +300,9 @@ def remap_vegetation(InputDataset, InputVegetation, OutputVegetation, Config):
     PointsThreshold = [1, MinPointsFound, MinPointsFound, 1]
 
     # Start by iterating through each output vegetation type
+    counter = 0
     for (OutVeg, Lat, Lon), _ in numpy.ma.ndenumerate(MaskedOutputVeg):
-
+        
         # Iterate through the search methods until a success
         for Method, Param, MinPoints in zip(SearchMethods, SearchParams,
                                             PointsThreshold):
@@ -309,13 +360,20 @@ if __name__ == '__main__':
     args = _parse_args()
     OrigDataset = xarray.open_dataset(args.input)
     OrigVegetation = OrigDataset['FRACTIONS OF SURFACE TYPES'].to_numpy()
+
     NewVegetation = xarray.open_dataset(args.vegetation_map)
-    NewVegetation = NewVegetation['fraction'][0, :, :, :].to_numpy()
+    # Allow the file to contain a time series (as might be prepared for a LUC
+    # dataset) or a snapshot.
+    try:
+        NewVegetation = NewVegetation['fraction'][0, :, :, :].to_numpy()
+    except:
+        NewVegetation = NewVegetation['fraction'].to_numpy()
 
     OutDataset = remap_vegetation(
             OrigDataset,
             OrigVegetation,
             NewVegetation,
+            args.fill_all,
             args.config
             )
 

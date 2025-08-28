@@ -29,6 +29,7 @@ Takes a subset of the fields from the UM restart and converts them to NetCDF. Th
 * ```-i/--input```: NetCDF representation of UM restart to map onto a new vegetation distribution.
 * ```-o/--output```: Name to write the generated NetCDF file to.
 * ```-m/--vegetation_map```: NetCDF containing the new vegetation distribution. The vegetation distribution is expected to be in the ```"fraction"``` variable, and have dimensions of ```(time, veg, lat, lon)```.
+* ```--fill-all```: If specified, all the land tiles are filled with physically meaningful values, as opposed to only the active tiles.
 * ```-c/--config```: Configuration file describing the remapping process.
 
 ### Description
