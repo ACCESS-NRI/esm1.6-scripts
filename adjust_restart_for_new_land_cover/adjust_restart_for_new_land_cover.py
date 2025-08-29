@@ -167,7 +167,12 @@ def modify_mask_for_global(SearchMask, Global, Coord):
     # Nothing interesing to do here
     SearchMask[:] = True
 
-def find_active_tiles(SearchMask, InputVegetation, VegetationMapping):
+def find_active_tiles(
+        SearchMask,
+        InputVegetation,
+        VegetationMapping,
+        ActiveThreshold
+        ):
     """Using the supplied search mask, generate a set of masks which are an OR
     of the original search mask and a mask describing the active tiles, defined
     as a tile with an area fraction of greater than 1e-3. Generates a mask for
@@ -186,7 +191,8 @@ def find_active_tiles(SearchMask, InputVegetation, VegetationMapping):
         # greater than 1e-6, which is the value used for tiles that will become
         # active in future due to land use change
         TileSearchMap = ~numpy.isnan(InputVegetation[VegType, :, :]) &\
-                SearchMask & (InputVegetation[VegType, :, :] >= 1e-6)
+                SearchMask &\
+                (InputVegetation[VegType, :, :] >= ActiveThreshold)
 
         ActiveTileMasks.append(TileSearchMap)
 
@@ -197,7 +203,8 @@ def remap_vegetation(
         InputVegetation,
         OutputVegetation,
         FillAll,
-        Config):
+        Config,
+        ActiveThreshold):
     """Map the input vegetation to the output vegetation."""
 
     # Read in the variable mappings- needs number of vegetation types for map
@@ -223,12 +230,12 @@ def remap_vegetation(
         (('veg', 'lat', 'lon'), NewVegetation)
 
     # We need to know which tiles to fill, and which to empty. This depends on
-    # what mode we're in: if --all is passed, then we fill all empty relevant
+    # what mode we're in: if --fill-all is passed, then we fill all empty relevant
     # tiles, otherwise only the new active tiles. Likewise, we need to which
-    # tiles to empty in the case where --all is not passed.
+    # tiles to empty in the case where --fill-all is not passed.
     if FillAll:
         # Everywhere not already filled by the existing tiles
-        TilesToFill = InputVegetation < 1e-6
+        TilesToFill = InputVegetation < ActiveThreshold
 
         # Don't need to empty anything
         TilesToEmpty = numpy.full_like(InputVegetation, False, dtype=bool)
@@ -236,14 +243,14 @@ def remap_vegetation(
     else:
         # Only new tiles that have come into existence
         TilesToFill = numpy.logical_and(
-                InputVegetation < 1e-6,
-                OutputVegetation >= 1e-6
+                InputVegetation < ActiveThreshold,
+                OutputVegetation >= ActiveThreshold
                 )
 
         # Tiles that have left existence
         TilesToEmpty = numpy.logical_and(
-                InputVegetation >= 1e-6,
-                OutputVegetation < 1e-6
+                InputVegetation >= ActiveThreshold,
+                OutputVegetation < ActiveThreshold
                 )
 
     # Perform the per-cell averaging
@@ -251,7 +258,7 @@ def remap_vegetation(
     # near-zero vegetation fractions
     MaskedInputVegetation = numpy.ma.masked_where(
             numpy.logical_or(
-                InputVegetation < 1e-6,
+                InputVegetation < ActiveThreshold,
                 numpy.isnan(InputVegetation)
                 ),
             InputVegetation)
