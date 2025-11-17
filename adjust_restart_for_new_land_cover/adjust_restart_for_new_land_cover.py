@@ -71,7 +71,7 @@ def prepare_mapping(nVeg, ConfigFile):
     
     return MappingConf
 
-def setup_output_dataset(OutputVegetation, VariableList):
+def setup_output_dataset(OutputVegetation, InputDataset, VariableList):
     """Use the OutputVegetation as a template to set up the Dataset that will
     contain the new restart information. Use the list of variable names
     contained in the Config to set the NetCDF variable names."""
@@ -104,7 +104,7 @@ def setup_output_dataset(OutputVegetation, VariableList):
                     ('veg', 'lat', 'lon'),
                     numpy.full(
                         (nOutputVeg, nLat, nLon),
-                        FillVal,
+                        InputDataset[Variable].to_numpy(),
                         dtype=numpy.float32
                         )
                     )
@@ -171,11 +171,10 @@ def find_active_tiles(
         SearchMask,
         InputVegetation,
         VegetationMapping,
-        ActiveThreshold
         ):
     """Using the supplied search mask, generate a set of masks which are an OR
     of the original search mask and a mask describing the active tiles, defined
-    as a tile with an area fraction of greater than 1e-3. Generates a mask for
+    as a tile with an area fraction of greater than 1e-6. Generates a mask for
     each of the vegetation types used to construct the new vegetation type."""
 
     # Make it a list, because there are instances where more than 1 input
@@ -192,7 +191,7 @@ def find_active_tiles(
         # active in future due to land use change
         TileSearchMap = ~numpy.isnan(InputVegetation[VegType, :, :]) &\
                 SearchMask &\
-                (InputVegetation[VegType, :, :] >= ActiveThreshold)
+                (InputVegetation[VegType, :, :] > 0.0)
 
         ActiveTileMasks.append(TileSearchMap)
 
@@ -203,8 +202,7 @@ def remap_vegetation(
         InputVegetation,
         OutputVegetation,
         FillAll,
-        Config,
-        ActiveThreshold):
+        Config):
     """Map the input vegetation to the output vegetation."""
 
     # Read in the variable mappings- needs number of vegetation types for map
@@ -220,8 +218,8 @@ def remap_vegetation(
     MinPointsFound = MappingConf['minimum_points']
     
     # Set up the Dataset we're going to write to
-    OutDataset = setup_output_dataset(OutputVegetation, PerCellVariables +
-                                      PerTileVariables)
+    OutDataset = setup_output_dataset(OutputVegetation, InputDataset,
+                                      PerCellVariables + PerTileVariables)
 
     # Add the land fractions- also include previous year as same for LUC
     OutDataset['FRACTIONS OF SURFACE TYPES'] = (('veg', 'lat', 'lon'),
@@ -235,7 +233,7 @@ def remap_vegetation(
     # tiles to empty in the case where --fill-all is not passed.
     if FillAll:
         # Everywhere not already filled by the existing tiles
-        TilesToFill = InputVegetation < ActiveThreshold
+        TilesToFill = InputVegetation <= 0.0
 
         # Don't need to empty anything
         TilesToEmpty = numpy.full_like(InputVegetation, False, dtype=bool)
@@ -243,14 +241,14 @@ def remap_vegetation(
     else:
         # Only new tiles that have come into existence
         TilesToFill = numpy.logical_and(
-                InputVegetation < ActiveThreshold,
-                OutputVegetation >= ActiveThreshold
+                InputVegetation <= 0.0,
+                OutputVegetation > 0.0
                 )
 
         # Tiles that have left existence
         TilesToEmpty = numpy.logical_and(
-                InputVegetation >= ActiveThreshold,
-                OutputVegetation < ActiveThreshold
+                InputVegetation > 0.0,
+                OutputVegetation <= 0.0
                 )
 
     # Perform the per-cell averaging
@@ -258,7 +256,7 @@ def remap_vegetation(
     # near-zero vegetation fractions
     MaskedInputVegetation = numpy.ma.masked_where(
             numpy.logical_or(
-                InputVegetation < ActiveThreshold,
+                InputVegetation <= 0.0,
                 numpy.isnan(InputVegetation)
                 ),
             InputVegetation)
@@ -326,7 +324,9 @@ def remap_vegetation(
             PointsFound = sum([ActiveTileMask.sum() for ActiveTileMask in
                               ActiveTileMasks])
 
+            print(f"Index {(OutVeg, Lat, Lon)} has {PointsFound} valid points")
             if PointsFound >= MinPoints:
+                print(f"Technique {Method.__name__} was used in index {(OutVeg, Lat, Lon)}")
                 # Search was successful
                 break
 
@@ -358,6 +358,12 @@ def remap_vegetation(
 
         # Reset the search mask to false
         SearchMask[:] = False
+
+    # Now we can reset all the tiles we want to empty back to 0.0. It's important
+    # to do this after filling the new tiles, as the old tiles should still be
+    # considered valid sources for the new tiles.
+    for Variable in PerTileVariables:
+        OutDataset[Variable] = OutDataset[Variable].where(~TilesToFill, other=0.0)
 
     return OutDataset
 
