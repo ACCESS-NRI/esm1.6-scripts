@@ -98,18 +98,6 @@ def setup_output_dataset(OutputVegetation, InputDataset, VariableList):
                 }
             )
 
-    # Add the variables now
-    for Variable in VariableList:
-        OutDataset[Variable] = (
-                    ('veg', 'lat', 'lon'),
-                    numpy.full(
-                        (nOutputVeg, nLat, nLon),
-                        InputDataset[Variable].to_numpy(),
-                        dtype=numpy.float32
-                        )
-                    )
-        OutDataset[Variable].encoding['_FillValue'] = FillVal
-
     return OutDataset
                     
 def modify_mask_for_cell(SearchMask, GridCell, Coord):
@@ -246,10 +234,11 @@ def remap_vegetation(
                 )
 
         # Tiles that have left existence
-        TilesToEmpty = numpy.logical_and(
-                InputVegetation > 0.0,
-                OutputVegetation <= 0.0
-                )
+        #TilesToEmpty = numpy.logical_and(
+        #        InputVegetation > 0.0,
+        #        OutputVegetation <= 0.0
+        #        )
+        TilesToEmpty = OutputVegetation <= 0.0
 
     # Perform the per-cell averaging
     # Apply a mask to the array, so we don't mess up our summations with
@@ -280,6 +269,14 @@ def remap_vegetation(
 
         OutDataset[Variable] = (('veg', 'lat', 'lon'), OutData)
         
+    # For the per tile variables, start by initialising with the old data, then
+    # removing the tiles that have left existence
+    for Variable in PerTileVariables:
+        OutData = InputDataset[Variable].to_numpy()
+        OutData[TilesToEmpty] = 0
+
+        OutDataset[Variable] = (('veg', 'lat', 'lon'), OutData)
+
     # Perform the per-tile averaging
     # To only iterate over desired points, we can mask the array where so that
     # only TilesToFill are unmasked.
@@ -324,9 +321,7 @@ def remap_vegetation(
             PointsFound = sum([ActiveTileMask.sum() for ActiveTileMask in
                               ActiveTileMasks])
 
-            print(f"Index {(OutVeg, Lat, Lon)} has {PointsFound} valid points")
             if PointsFound >= MinPoints:
-                print(f"Technique {Method.__name__} was used in index {(OutVeg, Lat, Lon)}")
                 # Search was successful
                 break
 
@@ -358,12 +353,6 @@ def remap_vegetation(
 
         # Reset the search mask to false
         SearchMask[:] = False
-
-    # Now we can reset all the tiles we want to empty back to 0.0. It's important
-    # to do this after filling the new tiles, as the old tiles should still be
-    # considered valid sources for the new tiles.
-    for Variable in PerTileVariables:
-        OutDataset[Variable] = OutDataset[Variable].where(~TilesToFill, other=0.0)
 
     return OutDataset
 
