@@ -52,6 +52,8 @@ Following steps are applied at every tile on all land grid cell:
 
 5. Check for valid vegetation tiles globally. If any valid tiles exist, then take the non-weighted average of all valid tiles. If no tiles exist, then set the value to 0.0.
 
+If `--fill-all` is provided, then all tiles everywhere on the globe are filled using the above method. The resulting restart would be useable for any vegetation distribution, with a simple substition of `FRACTIONS OF SURFACE TYPES` and `PREVIOUS YEAR SURF FRACTIONS (TYPES)` fields. If `--fill-all` is not provided, then only the new tiles that have come into existence with the new vegetation distribution are filled, and the tiles that have left existence are reset to 0.0.
+
 ### Configuration file
 
 The configuration file contains is a YAML file which contains:
