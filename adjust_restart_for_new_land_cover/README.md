@@ -40,11 +40,11 @@ The vegetation agnostic variables, like soil moisture and temperature. These var
 
 The vegetation specific variables, primarily the nutrient pools. These variables should remain distinct across tiles. The fill process is as follows:
 
-1. Identified valid vegetation type mappings from the old vegetation types to the new. For most vegetation types, this is a 1-to-1 relationship i.e. only vegetation type 1 is valid for filling vegetation type 2, type 2 is valid for type 2 etc. For instances of new vegetation types being added, it is possible to map existing types to the new type, so that new types get an average of the types that were mapped to it. For example, in ESM1.6, C4 grasses (type 10) were added as a vegetation type, which was not included in ACCESS-ESM1.5. Vegetation types 6, 7 and 9 were considered valid vegetation types to fill the C4 grasses. This is demonstrated in the provided example configuration.
+1. Identified valid vegetation type mappings from the old vegetation types to the new. For most vegetation types, this is a 1-to-1 relationship i.e. only vegetation type 1 is valid for filling vegetation type 2, type 2 is valid for type 2 etc. For instances of new vegetation types being added, it is possible to map existing types to the new type, so that new types get an average of the types that were mapped to it. For example, in ESM1.6, C4 crops (type 10) were added as a vegetation type, which was not included in ACCESS-ESM1.5. Vegetation types 6, 7 and 9 were considered valid vegetation types to fill the C4 crops. This is demonstrated in the provided example configuration.
 
 Following steps are applied at every tile on all land grid cell:
 
-2. Check if the old vegetation surface fractions contained non-zero fraction of a vegetation type valid for the current tile. If yes, then the new value is set to the old value on that tile (non-weighted average if multiple valid vegetation types have non-zero fraction, as with C4 grasses). If not, continue to stage 3.
+2. Check if the old vegetation surface fractions contained non-zero fraction of a vegetation type valid for the current tile. If yes, then the new value is set to the old value on that tile (non-weighted average if multiple valid vegetation types have non-zero fraction, as with C4 crops). If not, continue to stage 3.
 
 3. Check for valid vegetated tiles in a small area around the original cell, where the area is defined by a number of latitude and longitude indices either side of the original cell. If any valid tiles exist, then take the non-weighted average of all valid tiles. If no valid tiles exist, continue to step 4. In the example configuration, 2 cells either side are used (i.e. a 5x5 square of cells around the original cell).
 
