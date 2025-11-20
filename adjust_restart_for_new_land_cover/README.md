@@ -29,6 +29,7 @@ Takes a subset of the fields from the UM restart and converts them to NetCDF. Th
 * ```-i/--input```: NetCDF representation of UM restart to map onto a new vegetation distribution.
 * ```-o/--output```: Name to write the generated NetCDF file to.
 * ```-m/--vegetation_map```: NetCDF containing the new vegetation distribution. The vegetation distribution is expected to be in the ```"fraction"``` variable, and have dimensions of ```(time, veg, lat, lon)```.
+* ```-t/--time-index```: Which time index in the provided vegetation map to use. Defaults to 0. If a value greater than 0 is supplied, the previous year fractions will be placed in the associated restart field for previous year fractions (for the purpose of land use change).
 * ```--fill-all```: If specified, all the land tiles are filled with physically meaningful values, as opposed to only the active tiles.
 * ```-c/--config```: Configuration file describing the remapping process.
 
@@ -40,19 +41,17 @@ The vegetation agnostic variables, like soil moisture and temperature. These var
 
 The vegetation specific variables, primarily the nutrient pools. These variables should remain distinct across tiles. The fill process is as follows:
 
-1. Identified valid vegetation type mappings from the old vegetation types to the new. For most vegetation types, this is a 1-to-1 relationship i.e. only vegetation type 1 is valid for filling vegetation type 2, type 2 is valid for type 2 etc. For instances of new vegetation types being added, it is possible to map existing types to the new type, so that new types get an average of the types that were mapped to it. For example, in ESM1.6, C4 crops (type 10) were added as a vegetation type, which was not included in ACCESS-ESM1.5. Vegetation types 6, 7 and 9 were considered valid vegetation types to fill the C4 crops. This is demonstrated in the provided example configuration.
+1. Identified valid vegetation type mappings from the old vegetation types to the new. For most vegetation types, this is a 1-to-1 relationship i.e. only vegetation type 1 is valid for filling vegetation type 2, type 2 is valid for type 2 etc. For instances of new vegetation types being added, it is possible to map existing types to the new type, so that new types get an average of the types that were mapped to it. For example, in ESM1.6, C4 grasses (type 10) were added as a vegetation type, which was not included in ACCESS-ESM1.5. Vegetation types 6, 7 and 9 were considered valid vegetation types to fill the C4 grasses. This is demonstrated in the provided example configuration.
 
 Following steps are applied at every tile on all land grid cell:
 
-2. Check if the old vegetation surface fractions contained non-zero fraction of a vegetation type valid for the current tile. If yes, then the new value is set to the old value on that tile (non-weighted average if multiple valid vegetation types have non-zero fraction, as with C4 crops). If not, continue to stage 3.
+2. Check if the old vegetation surface fractions contained non-zero fraction of a vegetation type valid for the current tile. If yes, then the new value is set to the old value on that tile (non-weighted average if multiple valid vegetation types have non-zero fraction, as with C4 grasses). If not, continue to stage 3.
 
 3. Check for valid vegetated tiles in a small area around the original cell, where the area is defined by a number of latitude and longitude indices either side of the original cell. If any valid tiles exist, then take the non-weighted average of all valid tiles. If no valid tiles exist, continue to step 4. In the example configuration, 2 cells either side are used (i.e. a 5x5 square of cells around the original cell).
 
 4. Check for valid vegetation tiles in a latitude band around the original cell. If any valid tiles exist, then take the non-weighted average of all valid tiles. If no tiles exist, then continue to step 5. The latitude band in the example configuration is 8 cells either side (+- 10 degrees).
 
 5. Check for valid vegetation tiles globally. If any valid tiles exist, then take the non-weighted average of all valid tiles. If no tiles exist, then set the value to 0.0.
-
-If `--fill-all` is provided, then all tiles everywhere on the globe are filled using the above method. The resulting restart would be useable for any vegetation distribution, with a simple substition of `FRACTIONS OF SURFACE TYPES` and `PREVIOUS YEAR SURF FRACTIONS (TYPES)` fields. If `--fill-all` is not provided, then only the new tiles that have come into existence with the new vegetation distribution are filled, and the tiles that have left existence are reset to 0.0.
 
 ### Configuration file
 

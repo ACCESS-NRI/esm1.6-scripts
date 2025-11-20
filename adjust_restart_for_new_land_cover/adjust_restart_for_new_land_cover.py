@@ -28,6 +28,13 @@ def _parse_args():
             help="New vegetation map to use"
             )
     parser.add_argument(
+            "-t",
+            "--time-index",
+            type=int,
+            default=0,
+            help="Index in vegetations fractions to use as current year"
+            )
+    parser.add_argument(
             "--fill-all",
             default=False,
             action="store_true",
@@ -189,8 +196,10 @@ def remap_vegetation(
         InputDataset,
         InputVegetation,
         OutputVegetation,
+        PreviousVegetation,
         FillAll,
-        Config):
+        Config
+        ):
     """Map the input vegetation to the output vegetation."""
 
     # Read in the variable mappings- needs number of vegetation types for map
@@ -211,9 +220,12 @@ def remap_vegetation(
 
     # Add the land fractions- also include previous year as same for LUC
     OutDataset['FRACTIONS OF SURFACE TYPES'] = (('veg', 'lat', 'lon'),
-                                               NewVegetation)
+                                               OutputVegetation)
+
+    # Assume the previous year surface fractions are just the same as current,
+    # unless otherwise specified
     OutDataset['PREVIOUS YEAR SURF FRACTIONS (TILES)'] = \
-        (('veg', 'lat', 'lon'), NewVegetation)
+        (('veg', 'lat', 'lon'), PreviousVegetation)
 
     # We need to know which tiles to fill, and which to empty. This depends on
     # what mode we're in: if --fill-all is passed, then we fill all empty relevant
@@ -363,18 +375,20 @@ if __name__ == '__main__':
     OrigDataset = xarray.open_dataset(args.input)
     OrigVegetation = OrigDataset['FRACTIONS OF SURFACE TYPES'].to_numpy()
 
-    NewVegetation = xarray.open_dataset(args.vegetation_map)
+    Vegetation = xarray.open_dataset(args.vegetation_map)
     # Allow the file to contain a time series (as might be prepared for a LUC
     # dataset) or a snapshot.
-    try:
-        NewVegetation = NewVegetation['fraction'][0, :, :, :].to_numpy()
-    except:
-        NewVegetation = NewVegetation['fraction'].to_numpy()
+    NewVegetation = Vegetation['fraction'][args.time_index, :, :, :].to_numpy()
+    if args.time_index > 0:
+        PrevVegetation = Vegetation['fraction'][args.time_index-1, :, :, :].to_numpy()
+    else:
+        PrevVegetation = Vegetation['fraction'][args.time_index, :, :, :].to_numpy()
 
     OutDataset = remap_vegetation(
             OrigDataset,
             OrigVegetation,
             NewVegetation,
+            PrevVegetation,
             args.fill_all,
             args.config
             )
