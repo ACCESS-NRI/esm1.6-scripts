@@ -76,7 +76,6 @@ def convert_restart(RestartFile, OutputFile):
             if Field.lbuser4 == StashCode:
                 NFields += 1
 
-        print(f"Field {FieldName} has {NFields} levels")
         # It should either be 1, for grid cell values, or 17 for values on
         # tiles
         if NFields == 1:
@@ -95,7 +94,6 @@ def convert_restart(RestartFile, OutputFile):
                 pass
 
         elif NFields == 17:
-            print(f"Converting field {FieldName}")
             # A per tile field
             FieldData = numpy.ndarray((17, 145, 192), dtype = numpy.float32)
             Veg = 0
