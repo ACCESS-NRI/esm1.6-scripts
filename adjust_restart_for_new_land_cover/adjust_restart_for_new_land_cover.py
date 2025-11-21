@@ -78,13 +78,10 @@ def prepare_mapping(nVeg, ConfigFile):
     
     return MappingConf
 
-def setup_output_dataset(OutputVegetation, InputDataset, VariableList):
+def setup_output_dataset(OutputVegetation):
     """Use the OutputVegetation as a template to set up the Dataset that will
     contain the new restart information. Use the list of variable names
     contained in the Config to set the NetCDF variable names."""
-
-    # Set the fill value that we will use for all variables
-    FillVal = 1e20
 
     # Get the shape of the output data to perform validation
     nOutputVeg, nLat, nLon = OutputVegetation.shape
@@ -169,7 +166,7 @@ def find_active_tiles(
         ):
     """Using the supplied search mask, generate a set of masks which are an OR
     of the original search mask and a mask describing the active tiles, defined
-    as a tile with an area fraction of greater than 1e-6. Generates a mask for
+    as a tile with an area fraction of greater than 0.0. Generates a mask for
     each of the vegetation types used to construct the new vegetation type."""
 
     # Make it a list, because there are instances where more than 1 input
@@ -182,7 +179,7 @@ def find_active_tiles(
         # * The supplied search mask
         # * The tiles which have a vegetation type greater than 0.0
         # Note that the minimum area threshold is chosen carefully to be
-        # greater than 1e-6, which is the value used for tiles that will become
+        # greater than 0.0, which is the value used for tiles that will become
         # active in future due to land use change
         TileSearchMap = ~numpy.isnan(InputVegetation[VegType, :, :]) &\
                 SearchMask &\
@@ -215,8 +212,10 @@ def remap_vegetation(
     MinPointsFound = MappingConf['minimum_points']
     
     # Set up the Dataset we're going to write to
-    OutDataset = setup_output_dataset(OutputVegetation, InputDataset,
-                                      PerCellVariables + PerTileVariables)
+    OutDataset = setup_output_dataset(OutputVegetation)
+
+    # Set the fill value that we will use for all variables
+    FillVal = 1e20
 
     # Add the land fractions- also include previous year as same for LUC
     OutDataset['FRACTIONS OF SURFACE TYPES'] = (('veg', 'lat', 'lon'),
@@ -280,6 +279,7 @@ def remap_vegetation(
         OutData[TilesToEmpty] = 0
 
         OutDataset[Variable] = (('veg', 'lat', 'lon'), OutData)
+        OutDataset[Variable].encoding['_FillValue'] = FillVal
         
     # For the per tile variables, start by initialising with the old data, then
     # removing the tiles that have left existence
@@ -288,6 +288,7 @@ def remap_vegetation(
         OutData[TilesToEmpty] = 0
 
         OutDataset[Variable] = (('veg', 'lat', 'lon'), OutData)
+        OutDataset[Variable].encoding['_FillValue'] = FillVal
 
     # Perform the per-tile averaging
     # To only iterate over desired points, we can mask the array where so that
