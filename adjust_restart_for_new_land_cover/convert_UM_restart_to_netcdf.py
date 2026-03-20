@@ -24,8 +24,8 @@ def _parse_args():
     parser.add_argument(
             "-s",
             "--stash",
-            help="Comma separated list of stashmaster files to use",
-            default="/g/data/access/umdir/vn7.3/ctldata/STASHmaster/STASHmaster_A,/g/data/rp23/experiments/2024-03-12_CABLE4-dev/lw5085/CABLE-as-ACCESS/prefix.PRESM_A"
+            help="Stashmaster file to use",
+            default="/g/data/vk83/prerelease/configurations/inputs/access-esm1p6/share/atmosphere/stash/2026.01.21/STASHmaster/STASHmaster_A"
             )
 
     return parser.parse_args()
@@ -118,10 +118,9 @@ if __name__ == '__main__':
     
     # Process the command line args
     FF = mule.FieldsFile.from_file(args.input)
-    SMBase = mule.STASHmaster()
-    for SM in args.stash.split(","):
-        SM = mule.STASHmaster.from_file(SM)
-        SMBase.update(SM)
+
+    # Build the STASHmaster and attach it to the UM restart
+    SMBase = mule.STASHmaster(args.stash)
 
     FF.attach_stashmaster_info(SMBase.by_section(0))
 

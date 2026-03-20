@@ -16,7 +16,7 @@ These are executed via ```run_adjust_restart.sh```. This script has placeholders
 
 * ```-i/--input```: Reference UM7 restart file to convert to NetCDF.
 * ```-o/--output```: Name to write the NetCDF file to.
-* ```-s/--stash```: STASHmaster files to use when generating NetCDF names. Defaults to ```/g/data/access/umdir/vn7.3/ctldata/STASHmaster/STASHmaster_A,/g/data/rp23/experiments/2024-03-12_CABLE4-dev/lw5085/CABLE-as-ACCESS/prefix.PRESM_A```, which is accurate for ESM1.5/ESM1.6 as of 17/07/2025.
+* ```-s/--stash```: STASHmaster file to use when generating NetCDF names. Defaults to ```/g/data/vk83/prerelease/configurations/inputs/access-esm1p6/share/atmosphere/stash/2026.01.21/STASHmaster/STASHmaster_A```, which is accurate for ESM1.5/ESM1.6 as of 20/03/2026.
 
 ### Description
 
@@ -71,7 +71,7 @@ The configuration file contains is a YAML file which contains:
 * ```-i/--input```: NetCDF file to merge into a reference UM restart.
 * ```-o/--output```: Name to write the resulting UM restart to.
 * ```-r/--restart```: Reference restart to place NetCDF fields into.
-* ```-s/--stash```: STASHmaster files to use with the UM restart files, for determining where to place NetCDF fields. Defaults to ```/g/data/access/umdir/vn7.3/ctldata/STASHmaster/STASHmaster_A,/g/data/rp23/experiments/2024-03-12_CABLE4-dev/lw5085/CABLE-as-ACCESS/prefix.PRESM_A```, which is accurate for ESM1.5/ESM1.6 as of 17/07/2025.
+* ```-s/--stash```: STASHmaster file to use with the UM restart files, for determining where to place NetCDF fields. Defaults to ```/g/data/vk83/prerelease/configurations/inputs/access-esm1p6/share/atmosphere/stash/2026.01.21/STASHmaster/STASHmaster_A```, which is accurate for ESM1.5/ESM1.6 as of 20/03/2026.
 
 ### Description
 
