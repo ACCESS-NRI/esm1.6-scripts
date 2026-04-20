@@ -1,5 +1,6 @@
 # splitnc
-A simple script that splits multi-field netCDF files into single-field files
+This script splits multi-field netCDF files into single-field files.
+It is designed to work on ESM1.6's atmosphere and ice files.
 
 ### Example Usage
 
