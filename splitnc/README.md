@@ -2,32 +2,51 @@
 This script splits multi-field netCDF files into single-field files.
 It is designed to work on ESM1.6's atmosphere and ice files.
 
-### Automatic Field Identification
+## Automatic Field Identification
 By default `splitnc` will attempt to identify the fields for a multi-field netCDF files by looking for variables that no other variables depend on.
 A variable that no others depend on is likely to be a field.
 E.g. many variables depend on `time`, but none depend on `sea_surface_temperature`.
 
-Alternatively the fields to separate to individual files can be specified as a comma sepated list with the `--field-vars` command line option.
+Alternatively the fields to separate to individual files can be specified as a comma separated list with the `--field-vars` command line option.
+`--field-vars` interprets each item as regex, e.g. one could use `--field-vars fld_.*` to match all variable names that start with the string `fld_`.
 
-### "Ancillary" Variables
+## "Ancillary" Variables
 
 Some variables with no dependents should not be separated into individual files, these variables must be manually identified with the `--shared-vars` command line option.
 These variables will then be present in every output file.
+Regex is also supported for this option.
 
 If there are ancillary fields that should only be present in only some of the output field files then multiple invocations of `splitnc` using `--field-vars` and `--shared-vars` will be required.
 
 Example of these variables are the `latitude_longitude` found in atmosphere files or the `uarea`, `tmask`, `tarea`, `VGRDb`, `VGRDi`, `VGRDs` variables from ice files.
 
-### Config File
+## Config File
 
-TODO: Add a commandline options to ingest a file to supply the rest of the command line options.
+The `-c`/`--command-line-file` option can be used to supply a filepath to a file that contains command line options.
+If this option is used, all other options supplied on the command line will be ignored.
+Newline characters in the file will be treated as whitespace, i.e. newlines can be used as well as spaces to separate command line arguments.
 
-### Command Line Options
+For example to replicate this command line,
+```
+python splitnc.py --verbose --overwrite --output-dir /output/directory --shared-vars latitude_longitude --rename-regex "(?P<newname>.*)_\d+" /input/directory/*.nc
+```
+the following file could be used;
+```
+--verbose
+--overwrite
+--output-dir /output/directory
+--shared-vars latitude_longitude
+--rename-regex "(?P<newname>.*)_\d+"
+/input/directory/*.nc
+```
+
+## Command Line Options
 
 ```quote
 usage: splitnc [-h] [--field-vars FIELD_VAR1,FIELD_VAR2,...] [--shared-vars SHARED_VAR1,SHARED_VAR2,...]
                [--output-name-pattern OUTPUT_NAME_PATTERN] [--rename-regex REGEX] [--output-dir OUTPUT_DIR] [--overwrite] [-v]
-               filepaths [filepaths ...]
+               [-c COMMAND_LINE_FILE]
+               [filepaths ...]
 
 Splits a multi-field netCDF file into separate one-field files
 
@@ -53,22 +72,26 @@ options:
                         as the original file.
   --overwrite           Overwrite existing files
   -v, --verbose
+  -c COMMAND_LINE_FILE, --command-line-file COMMAND_LINE_FILE
+                        A file containing a list of command-line arguments. Newlines in this file will be ignored. If supplied all
+                        other command line arguments will be ignored.
 ```
 
-### Example Usage
+## Example Usage
 
-`splitnc` just needs `xarray` and `netCDF4`.
+`splitnc` just needs the `xarray` and `netCDF4` python modules.
 On Gadi use load any module with `xarray`, such as `conda/analysis3`.
 Alternatively create a new python environment and install `xarray` and `netCDF4`.
 
-#### Atmosphere
+### Atmosphere
 To use this script for split multi-field atmosphere files from ACCESS-ESM1.6:
 ```bash
 python split-nc.py --shared-vars latitude_longitude  --rename-regex "(?P<newname>.*)_\\d+" $INPUT_DIR/*.nc
 ```
 
-`splitnc` will automatically determine which variables are fields by looking at which variables depend on other variables. Variables with nothing depending on them are deemed to be fields.
-Alternatively one can use `--field-vars fld_.*` to match the variable names in these files.
+`splitnc` will automatically determine which variables are fields by looking at which variables depend on other variables.
+Variables with nothing depending on them are deemed to be fields.
+Alternatively one could use `--field-vars fld_.*` to match the variable names in these files.
 
 The `--rename-regex` option with the supplied regex will rename variables like
 `time_0` or `pseudo_level_0` are renamed to `time` or `pseudo_level`.
@@ -76,10 +99,10 @@ The `--rename-regex` option with the supplied regex will rename variables like
 The `--shared-vars` option will ensure that the variable `latitude_longitude` is
 included in all files even though none of the field variable depend on it.
 
-#### Ice
+### Ice
 To use this script for split multi-field ice files from ACCESS-ESM1.6:
 ```bash
 python split-nc.py --shared-vars uarea,tmask,tarea,VGRDb,VGRDi,VGRDs $INPUT_DIR/*.nc
 ```
 
-With ice files the shared-vars are different and there are no duplicated variables that require renaming.
+In comparison to the atmosphere files, ice files have different shared-vars and there are no duplicated variables that require renaming.

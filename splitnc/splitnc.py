@@ -1,5 +1,6 @@
 import argparse
 import codecs
+from glob import glob
 import logging
 from pathlib import Path
 import re
@@ -130,7 +131,7 @@ def build_rename_dict(ds, rename_regex):
             except IndexError as e:
                 logging.error(
                     f"{coord} matched regex for renaming, {rename_regex}, "
-                    "but no \"newname\" capture group found"
+                    'but no "newname" capture group found'
                 )
                 raise e
 
@@ -209,9 +210,9 @@ def process_file(
 
             # Bounds shouldn't have coordinates or _FillValues
             bnds_set = {
-                    ds_v[bnd_v].attrs["bounds"]
-                    for bnd_v in ds_v.variables
-                    if "bounds" in ds_v[bnd_v].attrs
+                ds_v[bnd_v].attrs["bounds"]
+                for bnd_v in ds_v.variables
+                if "bounds" in ds_v[bnd_v].attrs
             }
             logging.debug(f"Bounds variables are {bnds_set}")
             for bnd in bnds_set:
@@ -246,7 +247,7 @@ def process_file(
 
 
 #### Main
-def arg_parse():
+def arg_parse(cmdline_args=None):
     parser = argparse.ArgumentParser(
         prog="splitnc",
         description="Splits a multi-field netCDF file into separate one-field files",
@@ -260,16 +261,39 @@ def arg_parse():
     def unescaped_str(arg_str):
         return codecs.decode(str(arg_str), "unicode_escape")
 
-    parser.add_argument("filepaths", nargs="+", help="One or more filepaths to process")
+    # Open the named file and parse it as a command line split it around the
+    # whitespaces (including newlines)
+    def command_line_file(filepath):
+        with open(filepath, "r") as f:
+            file_str = f.read()
+
+        return re.split(r"\s+", file_str)
+
+    # Filepath wildcards won't be expanded if supplied via a command line file
+    # I.e. *.nc won't be expanded by the shell to [file1.nc, file2.nc]
+    def globbable_string_list(string_list):
+        print(string_list)
+
+        return glob(string_list)
+
+    # Let filepaths be optional (i.e. nargs=* instead of +) so that it isn't
+    # required and --cmd-line-file can be used on it's own
+    parser.add_argument(
+        "filepaths",
+        nargs="*",
+        default=[],
+        type=globbable_string_list,
+        help="One or more filepaths to process",
+    )
     parser.add_argument(
         "--field-vars",
         type=comma_separated_string_type,
         default=[],
         metavar="FIELD_VAR1,FIELD_VAR2,...",
         help="Specify the names of the field variables to split into separate "
-            "files - dimensions, bounds, and coordinates of these fields will "
-            "be included in each file. Disables automatic field variable "
-            "identification. Regex patterns can be used here.",
+        "files - dimensions, bounds, and coordinates of these fields will "
+        "be included in each file. Disables automatic field variable "
+        "identification. Regex patterns can be used here.",
     )
     parser.add_argument(
         "--shared-vars",
@@ -277,30 +301,30 @@ def arg_parse():
         default=[],
         metavar="SHARED_VAR1,SHARED_VAR2,...",
         help="Specify the names of variables that should be shared across "
-            "files that cannot be automatically identified, as a comma "
-            "separated list. Regex patterns can be used here.",
+        "files that cannot be automatically identified, as a comma "
+        "separated list. Regex patterns can be used here.",
     )
     parser.add_argument(
         "--output-name-pattern",
         default="{field_var}_{filename}",
         help="The pattern to use for the names of output files. Use "
-            "\"{field_var}\" for the name of the field variables, and "
-            "\"{filename}\" for the original filename. Defaults to "
-            "\"{field_var}_{filename}\".",
+        '"{field_var}" for the name of the field variables, and '
+        '"{filename}" for the original filename. Defaults to '
+        '"{field_var}_{filename}".',
     )
     parser.add_argument(
         "--rename-regex",
         type=unescaped_str,
         metavar="REGEX",
         help="Look for duplicated coordinate names that match the given regex "
-            "and rename them to the first \"newname\" capture group in the "
-            "regex. E.g. \"(?P<newname>.*)_\\d+\" will match \"time_0\" and "
-            "rename it to \"time\".",
+        'and rename them to the first "newname" capture group in the '
+        'regex. E.g. "(?P<newname>.*)_\\d+" will match "time_0" and '
+        'rename it to "time".',
     )
     parser.add_argument(
         "--output-dir",
         help="Output directory for the processed files. If not given output "
-            "files will be placed in the same directory as the original file.",
+        "files will be placed in the same directory as the original file.",
     )
     parser.add_argument(
         "--overwrite", action="store_true", help="Overwrite existing files"
@@ -310,8 +334,27 @@ def arg_parse():
         "--verbose",
         action="store_true",
     )
+    parser.add_argument(
+        "-c",
+        "--command-line-file",
+        type=command_line_file,
+        help="A file containing a list of command-line arguments. Newlines in "
+        "this file will be ignored. If supplied all other command line "
+        "arguments will be ignored.",
+    )
 
-    return parser.parse_args()
+    args = parser.parse_args(args=cmdline_args)
+
+    # File paths may need flattened since glob was used
+    args.filepaths = [
+        filepath for glob_list in args.filepaths for filepath in glob_list
+    ]
+
+    # If the command line yaml was supplied use the contents instead of argv
+    if args.command_line_file:
+        return arg_parse(args.command_line_file)
+    else:
+        return args
 
 
 def setup_logging(verbose=False):
