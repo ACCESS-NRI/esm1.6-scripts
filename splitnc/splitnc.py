@@ -272,8 +272,6 @@ def arg_parse(cmdline_args=None):
     # Filepath wildcards won't be expanded if supplied via a command line file
     # I.e. *.nc won't be expanded by the shell to [file1.nc, file2.nc]
     def globbable_string_list(string_list):
-        print(string_list)
-
         return glob(string_list)
 
     # Let filepaths be optional (i.e. nargs=* instead of +) so that it isn't
