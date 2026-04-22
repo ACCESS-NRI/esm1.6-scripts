@@ -373,6 +373,10 @@ def main():
 
     logging.debug(f"Command line args are: {args}")
 
+    if len(args.filepaths) == 0:
+        logging.error("No files to process.")
+        raise ValueError("No files to process.")
+
     for f in args.filepaths:
         process_file(
             f,
