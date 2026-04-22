@@ -153,7 +153,9 @@ def process_file(
     logging.debug(f"Processing {filepath}")
     filepath = Path(filepath)
 
-    with xr.open_dataset(filepath, use_cftime=True) as ds:
+    # Use cftime to suppress warnings
+    decoder = xr.coders.CFDatetimeCoder(use_cftime=True)
+    with xr.open_dataset(filepath, decode_times=decoder) as ds:
         if field_vars is None or len(field_vars) == 0:
             logging.debug("Automatically determining field variables")
 
@@ -257,10 +259,6 @@ def arg_parse(cmdline_args=None):
     def comma_separated_string_type(s):
         return s.split(",")
 
-    # Escaped strings need some careful handling
-    def unescaped_str(arg_str):
-        return codecs.decode(str(arg_str), "unicode_escape")
-
     # Open the named file and parse it as a command line split it around the
     # whitespaces (including newlines)
     def command_line_file(filepath):
@@ -312,7 +310,6 @@ def arg_parse(cmdline_args=None):
     )
     parser.add_argument(
         "--rename-regex",
-        type=unescaped_str,
         metavar="REGEX",
         help="Look for duplicated coordinate names that match the given regex "
         'and rename them to the first "newname" capture group in the '
