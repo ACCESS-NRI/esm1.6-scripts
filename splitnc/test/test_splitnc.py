@@ -13,13 +13,13 @@ from splitnc import determine_field_vars
         (
             # Test a monthly atmosphere file
             "aiihca.pa-234501_mon.cdl",
-            "--shared-vars latitude_longitude --rename-regex '(?P<newname>.*)_\\d+'",
+            "--shared-vars latitude_longitude --rename-regex '(?P<newname>.+)_\\d+'",
             "fld_.+",
         ),
         (
             # Test a daily atmosphere file
             "aiihca.pe-234501_dai.cdl",
-            "--shared-vars latitude_longitude --rename-regex '(?P<newname>.*)_\\d+'",
+            "--shared-vars latitude_longitude --rename-regex '(?P<newname>.+)_\\d+'",
             "fld_.+",
         ),
         (

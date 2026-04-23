@@ -9,6 +9,17 @@ import xarray as xr
 
 
 def determine_field_vars(ds):
+    """
+    Attempt to determine which variables in the xarray dataset are fields
+
+    If a variable is not depended on by any other variables it is likely to be a
+    field. E.g.
+        F(x, y, z), x, y, z
+            F depends on x, y, and z so x, y, and z are not fields
+            Nothing depends on F, so F is likely to be a field
+
+    Need to check dimensions, bounds, and coordinates
+    """
     reference_counts = {varname: 0 for varname in ds.variables}
 
     for varname in reference_counts.keys():
@@ -34,6 +45,16 @@ def determine_field_vars(ds):
 
 
 def get_dependent_vars(ds, varname, curr_vars=None):
+    """
+    Get a list of variables that the given variable depends on.
+
+    Check dimensions, bounds, and coordinates
+
+    Recurse on each NEW dependent to get other dependents.
+    
+    By only recursing on new dependents infinite recursion in the case of
+    circular dependcies is avoided.
+    """
     logging.debug(f"Determining dependent variables for {varname}")
     if curr_vars is None:
         curr_vars = set()
@@ -53,7 +74,7 @@ def get_dependent_vars(ds, varname, curr_vars=None):
         bounds = ds[varname].attrs["bounds"]
         new_vars.update([bounds])
 
-    # Get the set of vars that are actually new
+    # Get the set of vars that are actually new (to avoid infinite recursion)
     diff_vars = new_vars.difference(curr_vars)
 
     all_vars = curr_vars | new_vars
@@ -67,6 +88,14 @@ def get_dependent_vars(ds, varname, curr_vars=None):
 
 
 def get_vars_in_order(ds, varname):
+    """
+    Get the variables in order
+
+    - Start with the field for this dataset,
+    - Followed by the dimensions of the field
+      - each dim followed by their bounds if they exist
+    - Finish with anything remaining in alphabetical order 
+    """
     # Order the variables
     vars_to_order = list(ds.variables)
 
@@ -94,6 +123,12 @@ def get_vars_in_order(ds, varname):
 
 
 def rename_variable(ds, oldname, newname):
+    """
+    Rename a variable, xarray handles most of the rename.
+
+    If the variable has a bounds variable, also rename the matching  portion of
+    the bound's name. I.e. latitude -> lat therefore latitude_bnds -> lat_bnds
+    """
     logging.debug(f"Renaming {oldname} to {newname}")
     ds_new = ds.rename({oldname: newname})
 
@@ -115,11 +150,23 @@ def rename_variable(ds, oldname, newname):
 
 
 def match_regex_list(regex_list, string_list):
+    """
+    Return strings in the given list that match the supplied regex
+    """
     compiled_regex = [re.compile(regex) for regex in regex_list]
     return [s for s in string_list if any(r.fullmatch(s) for r in compiled_regex)]
 
 
 def build_rename_dict(ds, rename_regex):
+    """
+    Use the supplied regex to build a dictionary of {"oldname": "newname"} to
+    pass to xarray's rename.
+
+    "newname" should be supplied as a named capture group in the regex.
+
+    E.g. to rename "time_0", "time_1" or "height_0" to "time" or "height", one
+    could use the regex "(?P<newname>.+)_\\d+".
+    """
     logging.debug("Building rename dict")
     rename_dict = {}
     for coord in ds.coords:
