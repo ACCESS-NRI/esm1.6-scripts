@@ -19,7 +19,7 @@ dependencies = [
     test = [
         "pytest",
         "netCDF4",
-        "xarray",
+        "xarray>2025.1.2",
     ]
 
 [build-system]
