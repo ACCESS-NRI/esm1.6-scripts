@@ -8,7 +8,7 @@ A variable that no others depend on is likely to be a field.
 E.g. many variables depend on `time`, but none depend on `sea_surface_temperature`.
 
 Alternatively the fields to separate to individual files can be specified as a comma separated list with the `--field-vars` command line option.
-`--field-vars` interprets each item as regex, e.g. one could use `--field-vars fld_.*` to match all variable names that start with the string `fld_`.
+`--field-vars` interprets each item as regex, e.g. one could use `--field-vars fld_.+` to match all variable names that start with the string `fld_`.
 
 ## "Ancillary" Variables
 
@@ -28,7 +28,7 @@ Newline characters in the file will be treated as whitespace, i.e. newlines can 
 
 For example to replicate this command line,
 ```
-python splitnc.py --verbose --overwrite --output-dir /output/directory --shared-vars latitude_longitude --rename-regex "(?P<newname>.*)_\d+" /input/directory/*.nc
+python splitnc.py --verbose --overwrite --output-dir /output/directory --shared-vars latitude_longitude --rename-regex "(?P<newname>.+)_\d+" /input/directory/*.nc
 ```
 the following file could be used;
 ```
@@ -36,7 +36,7 @@ the following file could be used;
 --overwrite
 --output-dir /output/directory
 --shared-vars latitude_longitude
---rename-regex "(?P<newname>.*)_\d+"
+--rename-regex "(?P<newname>.+)_\d+"
 /input/directory/*.nc
 ```
 
@@ -86,12 +86,12 @@ Alternatively create a new python environment and install `xarray` and `netCDF4`
 ### Atmosphere
 To use this script for split multi-field atmosphere files from ACCESS-ESM1.6:
 ```bash
-python split-nc.py --shared-vars latitude_longitude  --rename-regex "(?P<newname>.*)_\\d+" $INPUT_DIR/*.nc
+python split-nc.py --shared-vars latitude_longitude  --rename-regex "(?P<newname>.+)_\\d+" $INPUT_DIR/*.nc
 ```
 
 `splitnc` will automatically determine which variables are fields by looking at which variables depend on other variables.
 Variables with nothing depending on them are deemed to be fields.
-Alternatively one could use `--field-vars fld_.*` to match the variable names in these files.
+Alternatively one could use `--field-vars fld_.+` to match the variable names in these files.
 
 The `--rename-regex` option with the supplied regex will rename variables like
 `time_0` or `pseudo_level_0` are renamed to `time` or `pseudo_level`.

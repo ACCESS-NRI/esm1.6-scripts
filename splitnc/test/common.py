@@ -13,7 +13,10 @@ def runcmd(cmd, wd=None, env=None):
     local_env = os.environ.copy()
     if env is not None:
         local_env.update(env)
-    subprocess.run(shlex.split(cmd), stderr=subprocess.STDOUT, cwd=cwd, env=local_env, check=True)
+    subprocess.run(
+        shlex.split(cmd), stderr=subprocess.STDOUT, cwd=cwd, env=local_env, check=True
+    )
+
 
 def make_nc(tmp_path, cdl_file, filename="test.nc"):
     filepath = f"{tmp_path}/{filename}"

@@ -51,7 +51,7 @@ def get_dependent_vars(ds, varname, curr_vars=None):
     Check dimensions, bounds, and coordinates
 
     Recurse on each NEW dependent to get other dependents.
-    
+
     By only recursing on new dependents infinite recursion in the case of
     circular dependcies is avoided.
     """
@@ -94,7 +94,7 @@ def get_vars_in_order(ds, varname):
     - Start with the field for this dataset,
     - Followed by the dimensions of the field
       - each dim followed by their bounds if they exist
-    - Finish with anything remaining in alphabetical order 
+    - Finish with anything remaining in alphabetical order
     """
     # Order the variables
     vars_to_order = list(ds.variables)

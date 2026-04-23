@@ -34,7 +34,7 @@ from splitnc import determine_field_vars
             "--shared-vars uarea,tmask,tarea,VGRDb,VGRDi,VGRDs",
             "(ai|dv|si).+",
         ),
-    ]
+    ],
 )
 def test_splitnc(tmp_path, cdl_file, cmd_options, field_regex):
     """
@@ -50,7 +50,9 @@ def test_splitnc(tmp_path, cdl_file, cmd_options, field_regex):
 
     # Check all the output files have one and only one fld_* variable
     for output_file in output_dir.glob("*.nc"):
-        ds = xr.open_dataset(output_file, decode_times=xr.coders.CFDatetimeCoder(use_cftime=True))
+        ds = xr.open_dataset(
+            output_file, decode_times=xr.coders.CFDatetimeCoder(use_cftime=True)
+        )
 
         # Only one variable in each single-field file should match the field_regex
         count = 0
@@ -59,6 +61,7 @@ def test_splitnc(tmp_path, cdl_file, cmd_options, field_regex):
                 count += 1
 
         assert count == 1
+
 
 @pytest.mark.parametrize(
     "cdl_file,field_regex",
@@ -93,7 +96,7 @@ def test_splitnc(tmp_path, cdl_file, cmd_options, field_regex):
             "iceh-1daily-mean_2345-01.cdl",
             "(ai|dv|si||tarea|tmask|uarea|VGRD).*",
         ),
-    ]
+    ],
 )
 def test_determine_field_vars(tmp_path, cdl_file, field_regex):
     """
