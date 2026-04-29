@@ -302,7 +302,7 @@ def arg_parse(cmdline_args=None):
         description="Splits a multi-field netCDF file into separate one-field files",
     )
 
-    # Create a custom type for comma separated stings as lists
+    # Create a custom type for comma separated strings as lists
     def comma_separated_string_type(s):
         return s.split(",")
 

@@ -60,7 +60,7 @@ def test_splitnc(tmp_path, cdl_file, cmd_options, field_regex, num_nc_files):
     cmd = f"python splitnc.py {cmd_options} --output-dir {output_dir} {ncfile}"
     runcmd(cmd)
 
-    # Check all the output files have one and only one fld_* variable
+    # Check all the output files have one and only one variable matching the field_regex
     output_files = list(output_dir.glob("*.nc"))
     for output_file in output_files:
         print(output_file)
