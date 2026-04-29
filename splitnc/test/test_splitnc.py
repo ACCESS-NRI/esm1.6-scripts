@@ -8,19 +8,21 @@ from splitnc import determine_field_vars
 
 
 @pytest.mark.parametrize(
-    "cdl_file,cmd_options,field_regex,num_nc_files",
+    "cdl_file,cmd_options,rename_regex,field_regex,num_nc_files",
     [
         (
             # Test a monthly atmosphere file
             "aiihca.pa-234501_mon.cdl",
-            "--shared-vars latitude_longitude --rename-regex '(?P<newname>.+)_\\d+'",
+            "--shared-vars latitude_longitude --rename-regex '{rename_regex}'",
+            "'(?P<newname>.+)_\\d+'",
             "fld_.+",
             217,
         ),
         (
             # Test a daily atmosphere file
             "aiihca.pe-234501_dai.cdl",
-            "--shared-vars latitude_longitude --rename-regex '(?P<newname>.+)_\\d+'",
+            "--shared-vars latitude_longitude --rename-regex '{rename_regex}'",
+            "'(?P<newname>.+)_\\d+'",
             "fld_.+",
             36,
         ),
@@ -28,6 +30,7 @@ from splitnc import determine_field_vars
             # Test a monthly ice file
             "iceh-1monthly-mean_2345-01.cdl",
             "--shared-vars uarea,tmask,tarea,VGRDb,VGRDi,VGRDs",
+            None,
             "(ai|dv|si).+",
             53,
         ),
@@ -35,6 +38,7 @@ from splitnc import determine_field_vars
             # Test a daily ice file
             "iceh-1daily-mean_2345-01.cdl",
             "--shared-vars uarea,tmask,tarea,VGRDb,VGRDi,VGRDs",
+            None,
             "(ai|dv|si).+",
             25,
         ),
@@ -42,28 +46,49 @@ from splitnc import determine_field_vars
             # Test a monthly atmosphere file with a regex for shared-vars
             # Previously when shared-var regex were resolved after field-var, this failed
             "aiihca.pa-234501_mon.cdl",
-            "--shared-vars latitude_lon.+ --rename-regex '(?P<newname>.+)_\\d+'",
+            "--shared-vars latitude_lon.+ --rename-regex '{rename_regex}'",
+            "'(?P<newname>.+)_\\d+'",
             "fld_.+",
             217,
         ),
+        (
+            # Test a monthly atmosphere file with a single field with coords that need renaming
+            # Previously when the renaming would miss the cell_methods & coordinates
+            "aiihca.pa-234501_mon.cdl",
+            "--field-vars fld_s03i257 --shared-vars latitude_longitude --rename-regex '{rename_regex}'",
+            "(?P<newname>.+)_\\d+",
+            "fld_.+",
+            1,
+        ),
+        (
+            # Test a simple file with time_0 (including a cell_method)
+            # Previously when the renaming would miss the cell_methods & coordinates
+            "simple_cellmethod_rename.cdl",
+            "--shared-vars secondary_field --rename-regex '{rename_regex}'",
+            "(?P<newname>.+)_\\d+",
+            "field",
+            1,
+        ),
     ],
 )
-def test_splitnc(tmp_path, cdl_file, cmd_options, field_regex, num_nc_files):
+def test_splitnc(tmp_path, cdl_file, cmd_options, rename_regex, field_regex, num_nc_files):
     """
     Test running splitnc from the command line
     """
     # Create a file to test on
     ncfile = make_nc(tmp_path, f"test/data/{cdl_file}")
 
+    # Populate the rename regex if it's there
+    cmd_options = cmd_options.format(rename_regex=rename_regex)
+
     # Attempt to split the file
     output_dir = tmp_path / "single_field"
     cmd = f"python splitnc.py {cmd_options} --output-dir {output_dir} {ncfile}"
     runcmd(cmd)
 
-    # Check all the output files have one and only one variable matching the field_regex
+    # Check the output files
     output_files = list(output_dir.glob("*.nc"))
     for output_file in output_files:
-        print(output_file)
         ds = xr.open_dataset(
             output_file, decode_times=xr.coders.CFDatetimeCoder(use_cftime=True)
         )
@@ -75,6 +100,48 @@ def test_splitnc(tmp_path, cdl_file, cmd_options, field_regex, num_nc_files):
                 count += 1
 
         assert count == 1
+
+        # Check none of the variables/coordinates/dims/bounds/cell_methods in
+        # the file match the rename regex
+        for v in ds.variables:
+            # variable name
+            assert not re.match(rename_regex, v), \
+                f"{v} - variable hasn't been renamed"
+
+            # dimensions
+            assert all([not re.match(rename_regex, d) for d in ds[v].dims]), \
+                f"{v} - dimension hasn't been renamed, {ds[v].dims}"
+
+            # coords from .coords (typically dims + other coords)
+            assert all([not re.match(rename_regex, c) for c in ds[v].coords]), \
+                f"{v} - coords hasn't been renamed, {list(ds[v].coords)}"
+
+            # coords from attr (typically just other coords)
+            try:
+                coords = ds[v].encoding['coordinates'].split(' ')
+                assert all([not re.match(rename_regex, c) for c in coords]), \
+                    f"{v} - coordinate attr hasn't been renamed, {coords}"
+            except KeyError:
+                # There will be a KeyError if there is not 'coordinates' attr
+                pass
+
+            # bounds
+            try:
+                bnds = ds[v].attrs['bounds']
+                assert not re.match(rename_regex, bnds), \
+                    "{v} - bounds attr hasn't been renamed, {bnds}"
+            except KeyError:
+                # There will be a KeyError if there is not 'bounds' attr
+                pass
+
+            # cell_methods
+            try:
+                cell_methods = ds[v].attrs['cell_methods']
+                assert not re.match(rename_regex, cell_methods), \
+                    f"{v} - cell_methods hasn't been renamed, {cell_methods}"
+            except KeyError:
+                # There will be a KeyError if there is not 'bounds' attr
+                pass
 
     assert len(output_files) == num_nc_files
 

@@ -1,5 +1,4 @@
 import argparse
-import codecs
 from glob import glob
 import logging
 from pathlib import Path
@@ -126,16 +125,22 @@ def rename_variable(ds, oldname, newname):
     """
     Rename a variable, xarray handles most of the rename.
 
-    If the variable has a bounds variable, also rename the matching  portion of
+    If the variable has a bounds variable, also rename the matching portion of
     the bound's name. I.e. latitude -> lat therefore latitude_bnds -> lat_bnds
     """
     logging.debug(f"Renaming {oldname} to {newname}")
     ds_new = ds.rename({oldname: newname})
 
+    # TODO: Update any cell_methods that mention this variable
+
+    # TODO: Update any coordinates that mention this variable
+
+    # Update bounds
     try:
         old_bnd_name = ds_new[newname].attrs["bounds"]
         new_bnd_name = old_bnd_name.replace(oldname, newname)
 
+        # TODO: Should this recurse on this function in case any cell_methods or coordinates mention bnds?
         logging.debug(f"Renaming {old_bnd_name} to {new_bnd_name}")
         ds_new = ds_new.rename({old_bnd_name: new_bnd_name})
 
