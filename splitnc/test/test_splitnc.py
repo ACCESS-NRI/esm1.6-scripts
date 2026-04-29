@@ -8,35 +8,47 @@ from splitnc import determine_field_vars
 
 
 @pytest.mark.parametrize(
-    "cdl_file,cmd_options,field_regex",
+    "cdl_file,cmd_options,field_regex,num_nc_files",
     [
         (
             # Test a monthly atmosphere file
             "aiihca.pa-234501_mon.cdl",
             "--shared-vars latitude_longitude --rename-regex '(?P<newname>.+)_\\d+'",
             "fld_.+",
+            217,
         ),
         (
             # Test a daily atmosphere file
             "aiihca.pe-234501_dai.cdl",
             "--shared-vars latitude_longitude --rename-regex '(?P<newname>.+)_\\d+'",
             "fld_.+",
+            36,
         ),
         (
             # Test a monthly ice file
             "iceh-1monthly-mean_2345-01.cdl",
             "--shared-vars uarea,tmask,tarea,VGRDb,VGRDi,VGRDs",
             "(ai|dv|si).+",
+            53,
         ),
         (
             # Test a daily ice file
             "iceh-1daily-mean_2345-01.cdl",
             "--shared-vars uarea,tmask,tarea,VGRDb,VGRDi,VGRDs",
             "(ai|dv|si).+",
+            25,
+        ),
+        (
+            # Test a monthly atmosphere file with a regex for shared-vars
+            # Previously when shared-var regex were resolved after field-var, this failed
+            "aiihca.pa-234501_mon.cdl",
+            "--shared-vars latitude_lon.+ --rename-regex '(?P<newname>.+)_\\d+'",
+            "fld_.+",
+            217,
         ),
     ],
 )
-def test_splitnc(tmp_path, cdl_file, cmd_options, field_regex):
+def test_splitnc(tmp_path, cdl_file, cmd_options, field_regex, num_nc_files):
     """
     Test running splitnc from the command line
     """
@@ -49,7 +61,9 @@ def test_splitnc(tmp_path, cdl_file, cmd_options, field_regex):
     runcmd(cmd)
 
     # Check all the output files have one and only one fld_* variable
-    for output_file in output_dir.glob("*.nc"):
+    output_files = list(output_dir.glob("*.nc"))
+    for output_file in output_files:
+        print(output_file)
         ds = xr.open_dataset(
             output_file, decode_times=xr.coders.CFDatetimeCoder(use_cftime=True)
         )
@@ -61,6 +75,8 @@ def test_splitnc(tmp_path, cdl_file, cmd_options, field_regex):
                 count += 1
 
         assert count == 1
+
+    assert len(output_files) == num_nc_files
 
 
 @pytest.mark.parametrize(

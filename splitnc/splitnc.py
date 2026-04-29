@@ -203,6 +203,13 @@ def process_file(
     # Use cftime to suppress warnings
     decoder = xr.coders.CFDatetimeCoder(use_cftime=True)
     with xr.open_dataset(filepath, decode_times=decoder) as ds:
+        # Resolve any regex in the shared_vars list
+        if shared_vars:
+            shared_vars = match_regex_list(shared_vars, ds.variables)
+        else:
+            shared_vars = []
+        logging.debug(f"List of defined shared variables is: {shared_vars}")
+
         if field_vars is None or len(field_vars) == 0:
             logging.debug("Automatically determining field variables")
 
@@ -216,13 +223,6 @@ def process_file(
             # There may be regex to process
             field_vars = match_regex_list(field_vars, ds.variables)
         logging.debug(f"List of field vars is: {field_vars}")
-
-        # Resolve any regex in the shared_vars list
-        if shared_vars:
-            shared_vars = match_regex_list(shared_vars, ds.variables)
-        else:
-            shared_vars = []
-        logging.debug(f"List of defined shared variables is: {shared_vars}")
 
         # Build the mapping dict for renaming, e.g. {"time_0: "time"}
         if rename_regex:
