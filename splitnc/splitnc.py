@@ -131,18 +131,36 @@ def rename_variable(ds, oldname, newname):
     logging.debug(f"Renaming {oldname} to {newname}")
     ds_new = ds.rename({oldname: newname})
 
-    # TODO: Update any cell_methods that mention this variable
+    for v in ds.variables:
+        # Update cell_methods
+        try:
+            old_cell_methods = ds_new[v].attrs['cell_methods']
+            if oldname in old_cell_methods:
+                new_cell_methods = old_cell_methods.replace(oldname, newname)
+                logging.debug(f"Renaming {oldname} to {newname} in {v}'s cell_methods - {old_cell_methods} to {new_cell_methods}")
+                ds_new[v].attrs['cell_methods'] = new_cell_methods
+        except KeyError:
+            # Do nothing if there's no cell_methods
+            pass
 
-    # TODO: Update any coordinates that mention this variable
+        # Update coordinates
+        try:
+            old_coords = ds_new[v].encoding['coordinates']
+            if oldname in old_coords:
+                new_coords = old_coords.replace(oldname, newname)
+                logging.debug(f"Renaming {oldname} to {newname} in {v}'s coordinates - {old_coords} to {new_coords}")
+                ds_new[v].encoding['coordinates'] = new_coords
+        except KeyError:
+            # Do nothing if there's no coords
+            pass
 
     # Update bounds
     try:
         old_bnd_name = ds_new[newname].attrs["bounds"]
         new_bnd_name = old_bnd_name.replace(oldname, newname)
 
-        # TODO: Should this recurse on this function in case any cell_methods or coordinates mention bnds?
         logging.debug(f"Renaming {old_bnd_name} to {new_bnd_name}")
-        ds_new = ds_new.rename({old_bnd_name: new_bnd_name})
+        ds_new = rename_variable(ds_new, old_bnd_name, new_bnd_name)
 
         # Update the attr on the original variable
         logging.debug(f'Updating "bounds" attr on {newname} to {new_bnd_name}')
