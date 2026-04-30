@@ -66,7 +66,7 @@ def get_dependent_vars(ds, varname, curr_vars=None):
         "coordinates" in ds[varname].encoding
         and ds[varname].encoding["coordinates"] is not None
     ):
-        new_vars.update(ds[varname].encoding["coordinates"].split(" "))
+        new_vars.update(ds[varname].encoding["coordinates"].split())
 
     # Add bounds if the variable has them
     if "bounds" in ds[varname].attrs:

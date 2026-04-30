@@ -81,6 +81,14 @@ from splitnc import determine_field_vars
             "fld_s03i23.+",
             6,
         ),
+        (
+            # Test a simple file with a trailing space in the coords
+            "simple_coords_extra_space.cdl",
+            "",
+            None,
+            "field",
+            1,
+        ),
     ],
 )
 def test_splitnc(tmp_path, cdl_file, cmd_options, rename_regex, field_regex, num_nc_files):
@@ -131,7 +139,7 @@ def test_splitnc(tmp_path, cdl_file, cmd_options, rename_regex, field_regex, num
 
                 # coords from attr (typically just other coords)
                 try:
-                    coords = ds[v].encoding['coordinates'].split(' ')
+                    coords = ds[v].encoding['coordinates'].split()
                     assert all([not re.match(rename_regex, c) for c in coords]), \
                         f"{v} - coordinate attr hasn't been renamed, {coords}"
                 except KeyError:
