@@ -371,14 +371,6 @@ def arg_parse(cmdline_args=None):
         "separated list. Regex patterns can be used here.",
     )
     parser.add_argument(
-        "--output-name-pattern",
-        default="{field_var}_{filename}",
-        help="The pattern to use for the names of output files. Use "
-        '"{field_var}" for the name of the field variables, and '
-        '"{filename}" for the original filename. Defaults to '
-        '"{field_var}_{filename}".',
-    )
-    parser.add_argument(
         "--rename-regex",
         metavar="REGEX",
         help="Look for duplicated coordinate names that match the given regex "
