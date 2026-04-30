@@ -69,6 +69,18 @@ from splitnc import determine_field_vars
             "field",
             1,
         ),
+        (
+            # Test a daily atmosphere file with a subset of fields
+            # Previously fld_s03i236 would trigger a TypeError during renaming
+            # due to da.encoding['coordinates']==None
+            # Error doesn't trigger with just one field - some detail means
+            # coords!=None in that case
+            "aiihca.pe-234501_dai.cdl",
+            "--field-vars fld_s03i23.* --shared-vars latitude_longitude --rename-regex '{rename_regex}'",
+            "(?P<newname>.+)_\\d+",
+            "fld_s03i23.+",
+            6,
+        ),
     ],
 )
 def test_splitnc(tmp_path, cdl_file, cmd_options, rename_regex, field_regex, num_nc_files):

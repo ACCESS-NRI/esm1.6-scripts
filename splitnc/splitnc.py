@@ -135,7 +135,7 @@ def rename_variable(ds, oldname, newname):
         # Update cell_methods
         try:
             old_cell_methods = ds_new[v].attrs['cell_methods']
-            if oldname in old_cell_methods:
+            if old_cell_methods and oldname in old_cell_methods:
                 new_cell_methods = old_cell_methods.replace(oldname, newname)
                 logging.debug(f"Renaming {oldname} to {newname} in {v}'s cell_methods - {old_cell_methods} to {new_cell_methods}")
                 ds_new[v].attrs['cell_methods'] = new_cell_methods
@@ -146,7 +146,7 @@ def rename_variable(ds, oldname, newname):
         # Update coordinates
         try:
             old_coords = ds_new[v].encoding['coordinates']
-            if oldname in old_coords:
+            if old_coords and oldname in old_coords:
                 new_coords = old_coords.replace(oldname, newname)
                 logging.debug(f"Renaming {oldname} to {newname} in {v}'s coordinates - {old_coords} to {new_coords}")
                 ds_new[v].encoding['coordinates'] = new_coords
