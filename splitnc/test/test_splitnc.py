@@ -135,7 +135,7 @@ def test_splitnc(tmp_path, cdl_file, cmd_options, rename_regex, field_regex, num
                     assert all([not re.match(rename_regex, c) for c in coords]), \
                         f"{v} - coordinate attr hasn't been renamed, {coords}"
                 except KeyError:
-                    # There will be a KeyError if there is not 'coordinates' attr
+                    # There will be a KeyError if there are no 'coordinates'
                     pass
 
                 # bounds
@@ -144,7 +144,7 @@ def test_splitnc(tmp_path, cdl_file, cmd_options, rename_regex, field_regex, num
                     assert not re.match(rename_regex, bnds), \
                         "{v} - bounds attr hasn't been renamed, {bnds}"
                 except KeyError:
-                    # There will be a KeyError if there is not 'bounds' attr
+                    # There will be a KeyError if there are no 'bounds'
                     pass
 
                 # cell_methods
@@ -153,7 +153,7 @@ def test_splitnc(tmp_path, cdl_file, cmd_options, rename_regex, field_regex, num
                     assert not re.match(rename_regex, cell_methods), \
                         f"{v} - cell_methods hasn't been renamed, {cell_methods}"
                 except KeyError:
-                    # There will be a KeyError if there is not 'bounds' attr
+                    # There will be a KeyError if there are no 'cell_methods'
                     pass
 
     assert len(output_files) == num_nc_files
