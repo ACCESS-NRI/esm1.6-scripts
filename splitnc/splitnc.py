@@ -438,7 +438,7 @@ def arg_parse(cmdline_args=None):
     parser.add_argument(
         "--dont-update-history",
         action="store_true",
-        help="Disable automatic update of history attribute."
+        help="Disable automatic update of history attribute"
     )
     parser.add_argument(
         "-v",

@@ -60,21 +60,24 @@ options:
                         coordinates of these fields will be included in each file. Disables automatic field variable
                         identification. Regex patterns can be used here.
   --shared-vars SHARED_VAR1,SHARED_VAR2,...
-                        Specify the names of variables that should be shared across files that cannot be automatically identified,
-                        as a comma separated list. Regex patterns can be used here.
-  --output-name-pattern OUTPUT_NAME_PATTERN
-                        The pattern to use for the names of output files. Use "{field_var}" for the name of the field variables,
-                        and "{filename}" for the original filename. Defaults to "{field_var}_{filename}".
-  --rename-regex REGEX  Look for duplicated coordinate names that match the given regex and rename them to the first "newname"
-                        capture group in the regex. E.g. "(?P<newname>.*)_\d+" will match "time_0" and rename it to "time".
+                        Specify the names of variables that should be shared across files that cannot be automatically
+                        identified, as a comma separated list. Regex patterns can be used here.
+  --excluded-vars EXCLUDED_VAR1,EXCLUDED_VAR2,...
+                        Specify the names of variables that should be excluded from files. This option can be used with
+                        automatic identification of field variables. Regex patterns can be used here.
+  --rename-regex REGEX  Look for duplicated coordinate names that match the given regex and rename them to the first
+                        "newname" capture group in the regex. E.g. "(?P<newname>.*)_\d+" will match "time_0" and rename
+                        it to "time".
   --output-dir OUTPUT_DIR
-                        Output directory for the processed files. If not given output files will be placed in the same directory
-                        as the original file.
+                        Output directory for the processed files. If not given output files will be placed in the same
+                        directory as the original file.
   --overwrite           Overwrite existing files
+  --dont-update-history
+                        Disable automatic update of history attribute
   -v, --verbose
   -c COMMAND_LINE_FILE, --command-line-file COMMAND_LINE_FILE
-                        A file containing a list of command-line arguments. Newlines in this file will be ignored. If supplied all
-                        other command line arguments will be ignored.
+                        A file containing a list of command-line arguments. Newlines in this file will be ignored. If
+                        supplied all other command line arguments will be ignored.
 ```
 
 ## Example Usage
