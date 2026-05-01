@@ -375,7 +375,7 @@ def arg_parse(cmdline_args=None):
         with open(filepath, "r") as f:
             file_str = f.read()
 
-        return re.split(r"\s+", file_str)
+        return file_str.split()
 
     # Filepath wildcards won't be expanded if supplied via a command line file
     # I.e. *.nc won't be expanded by the shell to [file1.nc, file2.nc]

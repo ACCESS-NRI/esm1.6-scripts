@@ -13,16 +13,16 @@ from splitnc import determine_field_vars
         (
             # Test a monthly atmosphere file
             "aiihca.pa-234501_mon.cdl",
-            "--shared-vars latitude_longitude --rename-regex '{rename_regex}'",
-            "'(?P<newname>.+)_\\d+'",
+            "--shared-vars latitude_longitude --rename-regex {rename_regex}",
+            r"(?P<newname>.+)_\d+",
             "fld_.+",
             217,
         ),
         (
             # Test a daily atmosphere file
             "aiihca.pe-234501_dai.cdl",
-            "--shared-vars latitude_longitude --rename-regex '{rename_regex}'",
-            "'(?P<newname>.+)_\\d+'",
+            "--shared-vars latitude_longitude --rename-regex {rename_regex}",
+            r"(?P<newname>.+)_\d+",
             "fld_.+",
             36,
         ),
@@ -46,8 +46,8 @@ from splitnc import determine_field_vars
             # Test a monthly atmosphere file with a regex for shared-vars
             # Previously when shared-var regex were resolved after field-var, this failed
             "aiihca.pa-234501_mon.cdl",
-            "--shared-vars latitude_lon.+ --rename-regex '{rename_regex}'",
-            "'(?P<newname>.+)_\\d+'",
+            "--shared-vars latitude_lon.+ --rename-regex {rename_regex}",
+            r"(?P<newname>.+)_\d+",
             "fld_.+",
             217,
         ),
@@ -55,8 +55,8 @@ from splitnc import determine_field_vars
             # Test a monthly atmosphere file with a single field with coords that need renaming
             # Previously when the renaming would miss the cell_methods & coordinates
             "aiihca.pa-234501_mon.cdl",
-            "--field-vars fld_s03i257 --shared-vars latitude_longitude --rename-regex '{rename_regex}'",
-            "(?P<newname>.+)_\\d+",
+            "--field-vars fld_s03i257 --shared-vars latitude_longitude --rename-regex {rename_regex}",
+            r"(?P<newname>.+)_\d+",
             "fld_.+",
             1,
         ),
@@ -64,8 +64,8 @@ from splitnc import determine_field_vars
             # Test a simple file with time_0 (including a cell_method)
             # Previously when the renaming would miss the cell_methods & coordinates
             "simple_cellmethod_rename.cdl",
-            "--shared-vars secondary_field --rename-regex '{rename_regex}'",
-            "(?P<newname>.+)_\\d+",
+            "--shared-vars secondary_field --rename-regex {rename_regex}",
+            r"(?P<newname>.+)_\d+",
             "field",
             1,
         ),
@@ -76,8 +76,8 @@ from splitnc import determine_field_vars
             # Error doesn't trigger with just one field - some detail means
             # coords!=None in that case
             "aiihca.pe-234501_dai.cdl",
-            "--field-vars fld_s03i23.* --shared-vars latitude_longitude --rename-regex '{rename_regex}'",
-            "(?P<newname>.+)_\\d+",
+            "--field-vars fld_s03i23.* --shared-vars latitude_longitude --rename-regex {rename_regex}",
+            r"(?P<newname>.+)_\d+",
             "fld_s03i23.+",
             6,
         ),
@@ -91,7 +91,9 @@ from splitnc import determine_field_vars
         ),
     ],
 )
-def test_splitnc(tmp_path, cdl_file, cmd_options, rename_regex, field_regex, num_nc_files):
+@pytest.mark.parametrize("use_cmdline_file", [True, False])
+def test_splitnc(tmp_path, cdl_file, cmd_options, rename_regex, field_regex,
+    num_nc_files, use_cmdline_file):
     """
     Test running splitnc from the command line
     """
@@ -99,11 +101,28 @@ def test_splitnc(tmp_path, cdl_file, cmd_options, rename_regex, field_regex, num
     ncfile = make_nc(tmp_path, f"test/data/{cdl_file}")
 
     # Populate the rename regex if it's there
-    cmd_options = cmd_options.format(rename_regex=rename_regex)
+    output_dir = tmp_path / "single_field"
+    
+
+    # Are we using a cmdlinefile?
+    if use_cmdline_file:
+        cmd_options = cmd_options.format(rename_regex=rename_regex) + \
+            f" --output-dir {output_dir} {ncfile}"
+
+        cmdline_file_path = tmp_path / "cmdline_file"
+        with open(cmdline_file_path, 'w') as f:
+            f.write(cmd_options)
+
+        cmd = f"python splitnc.py --command-line-file {cmdline_file_path}"
+    else:
+        # Need to mess about with quotes around the regex
+        rename_regex = f"'{rename_regex}'"
+        cmd_options = cmd_options.format(rename_regex=rename_regex) + \
+            f" --output-dir {output_dir} {ncfile}"
+
+        cmd = f"python splitnc.py {cmd_options}"
 
     # Attempt to split the file
-    output_dir = tmp_path / "single_field"
-    cmd = f"python splitnc.py {cmd_options} --output-dir {output_dir} {ncfile}"
     runcmd(cmd)
 
     # Check the output files
