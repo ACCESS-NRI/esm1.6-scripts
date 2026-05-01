@@ -1,8 +1,11 @@
 import argparse
+from datetime import datetime, timezone
 from glob import glob
 import logging
 from pathlib import Path
+from platform import python_version
 import re
+import sys
 
 import xarray as xr
 
@@ -212,6 +215,25 @@ def build_rename_dict(ds, rename_regex):
     return rename_dict
 
 
+def build_history():
+    time_stamp = datetime.now(timezone.utc).isoformat(timespec='seconds')
+    python_exe = f"python{python_version()}"
+
+    # The list of files given on the commandline is not needed in the history
+    args = " ".join(sys.argv)
+  
+    return f"{time_stamp} : splitnc (https://github.com/ACCESS-NRI/esm1.6-scripts) : {python_exe} {args}"
+
+
+def update_history_attr(ds, new_history):
+    if "history" in ds.attrs:
+        old_history = ds.attrs["history"] + "\n"
+    else:
+        old_history = ""
+
+    ds.attrs["history"] = old_history + new_history
+
+
 def process_file(
     filepath,
     field_vars=None,
@@ -219,6 +241,7 @@ def process_file(
     rename_regex=None,
     output_dir=None,
     overwrite=False,
+    update_history=True,
 ):
     logging.debug(f"Processing {filepath}")
     filepath = Path(filepath)
@@ -298,6 +321,12 @@ def process_file(
             vars_in_order = get_vars_in_order(ds_v, v)
             logging.debug(f"Ordering variable as {vars_in_order}")
             ds_v = ds_v[vars_in_order]
+
+            # Update the history attribute
+            if update_history:
+                new_history = build_history()
+                logging.debug(f"Updating history attribute with: {new_history}")
+                update_history_attr(ds_v, new_history)
 
             if output_dir:
                 output_dir = Path(output_dir)
@@ -387,6 +416,11 @@ def arg_parse(cmdline_args=None):
         "--overwrite", action="store_true", help="Overwrite existing files"
     )
     parser.add_argument(
+        "--dont-update-history",
+        action="store_true",
+        help="Disable automatic update of history attribute."
+    )
+    parser.add_argument(
         "-v",
         "--verbose",
         action="store_true",
@@ -442,6 +476,7 @@ def main():
             rename_regex=args.rename_regex,
             output_dir=args.output_dir,
             overwrite=args.overwrite,
+            update_history=not args.dont_update_history,
         )
 
 
