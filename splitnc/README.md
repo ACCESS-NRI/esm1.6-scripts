@@ -102,7 +102,8 @@ included in all files even though none of the field variable depend on it.
 ### Ice
 To use this script for split multi-field ice files from ACCESS-ESM1.6:
 ```bash
-python split-nc.py --shared-vars uarea,tmask,tarea,VGRDb,VGRDi,VGRDs $INPUT_DIR/*.nc
+python split-nc.py --shared-vars uarea,tmask,tarea --excluded-vars VGRD. $INPUT_DIR/*.nc
 ```
 
 In comparison to the atmosphere files, ice files have different shared-vars and there are no duplicated variables that require renaming.
+The variables `VGRDb`, `VGRDi`, and `VGRDs` are not required and can thus be excluded from the output.

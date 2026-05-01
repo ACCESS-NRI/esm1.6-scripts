@@ -29,15 +29,15 @@ from splitnc import determine_field_vars
         (
             # Test a monthly ice file
             "iceh-1monthly-mean_2345-01.cdl",
-            "--shared-vars uarea,tmask,tarea,VGRDb,VGRDi,VGRDs",
+            "--shared-vars uarea,tmask,tarea --excluded-vars VGRDb,VGRDi,VGRDs",
             None,
             "(ai|dv|si).+",
             53,
         ),
         (
-            # Test a daily ice file
+            # Test a daily ice file (use a regex for exluded-vars here)
             "iceh-1daily-mean_2345-01.cdl",
-            "--shared-vars uarea,tmask,tarea,VGRDb,VGRDi,VGRDs",
+            "--shared-vars uarea,tmask,tarea --excluded-vars VGRD.",
             None,
             "(ai|dv|si).+",
             25,

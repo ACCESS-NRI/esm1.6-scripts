@@ -238,6 +238,7 @@ def process_file(
     filepath,
     field_vars=None,
     shared_vars=None,
+    excluded_vars=None,
     rename_regex=None,
     output_dir=None,
     overwrite=False,
@@ -249,25 +250,35 @@ def process_file(
     # Use cftime to suppress warnings
     decoder = xr.coders.CFDatetimeCoder(use_cftime=True)
     with xr.open_dataset(filepath, decode_times=decoder) as ds:
+        # Resolve any regex in the excluded_vars list
+        if excluded_vars:
+            excluded_vars = match_regex_list(excluded_vars, ds.variables)
+        else:
+            excluded_vars = []
+        logging.debug(f"List of defined shared variables is: {excluded_vars}")
+
         # Resolve any regex in the shared_vars list
         if shared_vars:
             shared_vars = match_regex_list(shared_vars, ds.variables)
+
+            # shared_vars should not be in excluded vars
+            shared_vars = [v for v in shared_vars if v not in excluded_vars]
         else:
             shared_vars = []
         logging.debug(f"List of defined shared variables is: {shared_vars}")
 
+        # Determine the field vars
         if field_vars is None or len(field_vars) == 0:
             logging.debug("Automatically determining field variables")
 
             field_vars = determine_field_vars(ds)
-
-            # Shared vars shouldn't be field_vars
-            if shared_vars:
-                logging.debug("Removing shared variables from list of field variables")
-                field_vars = [v for v in field_vars if v not in shared_vars]
         else:
             # There may be regex to process
             field_vars = match_regex_list(field_vars, ds.variables)
+
+        # Shared and excluded vars shouldn't be field_vars
+        logging.debug("Removing shared variables from list of field variables")
+        field_vars = [v for v in field_vars if v not in shared_vars and v not in excluded_vars]
         logging.debug(f"List of field vars is: {field_vars}")
 
         # Build the mapping dict for renaming, e.g. {"time_0: "time"}
@@ -400,6 +411,15 @@ def arg_parse(cmdline_args=None):
         "separated list. Regex patterns can be used here.",
     )
     parser.add_argument(
+        "--excluded-vars",
+        type=comma_separated_string_type,
+        default=[],
+        metavar="EXCLUDED_VAR1,EXCLUDED_VAR2,...",
+        help="Specify the names of variables that should be excluded from "
+        "files. This option can be used with automatic identification of field "
+        "variables. Regex patterns can be used here.",
+    )
+    parser.add_argument(
         "--rename-regex",
         metavar="REGEX",
         help="Look for duplicated coordinate names that match the given regex "
@@ -473,6 +493,7 @@ def main():
             f,
             field_vars=args.field_vars,
             shared_vars=args.shared_vars,
+            excluded_vars=args.excluded_vars,
             rename_regex=args.rename_regex,
             output_dir=args.output_dir,
             overwrite=args.overwrite,
