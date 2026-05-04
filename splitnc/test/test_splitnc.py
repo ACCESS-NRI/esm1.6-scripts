@@ -100,10 +100,8 @@ def test_splitnc(tmp_path, cdl_file, cmd_options, rename_regex, field_regex,
     # Create a file to test on
     ncfile = make_nc(tmp_path, f"test/data/{cdl_file}")
 
-    # Populate the rename regex if it's there
     output_dir = tmp_path / "single_field"
     
-
     # Are we using a cmdlinefile?
     if use_cmdline_file:
         cmd_options = cmd_options.format(rename_regex=rename_regex) + \
