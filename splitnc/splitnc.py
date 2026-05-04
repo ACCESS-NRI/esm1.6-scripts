@@ -1,4 +1,5 @@
 import argparse
+from collections import Counter
 from datetime import datetime, timezone
 from glob import glob
 import logging
@@ -22,27 +23,24 @@ def determine_field_vars(ds):
 
     Need to check dimensions, bounds, and coordinates
     """
-    reference_counts = {varname: 0 for varname in ds.variables}
+    reference_counts = Counter()
 
-    for varname in reference_counts.keys():
-        for dim in ds[varname].dims:
-            # Not all dimensions are variables
-            if dim in reference_counts.keys():
-                reference_counts[dim] += 1
+    for varname in ds.variables:
+        # Any dims that are not variables will be ignored
+        reference_counts.update(ds[varname].dims)
 
         try:
-            for coord in ds[varname].encoding["coordinates"].split(" "):
-                reference_counts[coord] += 1
+            reference_counts.update(ds[varname].encoding["coordinates"].split())
         except KeyError:
             pass
 
         try:
-            reference_counts[ds[varname].attrs["bounds"]] += 1
+            reference_counts.update([ds[varname].attrs["bounds"]])
         except KeyError:
             pass
 
     return sorted(
-        [varname for varname, count in reference_counts.items() if count == 0]
+        [varname for varname in ds.variables if reference_counts[varname] == 0]
     )
 
 
@@ -55,7 +53,7 @@ def get_dependent_vars(ds, varname, curr_vars=None):
     Recurse on each NEW dependent to get other dependents.
 
     By only recursing on new dependents infinite recursion in the case of
-    circular dependcies is avoided.
+    circular dependencies is avoided.
     """
     logging.debug(f"Determining dependent variables for {varname}")
     if curr_vars is None:

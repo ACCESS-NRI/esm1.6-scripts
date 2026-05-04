@@ -226,12 +226,12 @@ def test_splitnc(tmp_path, cdl_file, cmd_options, rename_regex, excluded_vars,
         (
             # Test a monthly ice file - will also pick up some extra fields
             "iceh-1monthly-mean_2345-01.cdl",
-            "(ai|dv|si||tarea|tmask|uarea|VGRD).*",
+            "(ai|dv|si|tarea|tmask|uarea|VGRD).*",
         ),
         (
             # Test a daily ice file - will also pick up some extra fields
             "iceh-1daily-mean_2345-01.cdl",
-            "(ai|dv|si||tarea|tmask|uarea|VGRD).*",
+            "(ai|dv|si|tarea|tmask|uarea|VGRD).*",
         ),
     ],
 )
@@ -247,5 +247,4 @@ def test_determine_field_vars(tmp_path, cdl_file, field_regex):
         field_list = determine_field_vars(ds)
 
         # Check all the discovered fields match the regex
-        print(field_list)
         assert all([re.match(field_regex, v) for v in field_list])
