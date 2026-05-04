@@ -255,7 +255,7 @@ def process_file(
             excluded_vars = match_regex_list(excluded_vars, ds.variables)
         else:
             excluded_vars = []
-        logging.debug(f"List of defined shared variables is: {excluded_vars}")
+        logging.debug(f"List of defined excluded variables is: {excluded_vars}")
 
         # Resolve any regex in the shared_vars list
         if shared_vars:
