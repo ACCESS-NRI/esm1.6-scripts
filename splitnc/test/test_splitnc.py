@@ -8,13 +8,14 @@ from splitnc import determine_field_vars
 
 
 @pytest.mark.parametrize(
-    "cdl_file,cmd_options,rename_regex,field_regex,num_nc_files",
+    "cdl_file,cmd_options,rename_regex,excluded_vars,field_regex,num_nc_files",
     [
         (
             # Test a monthly atmosphere file
             "aiihca.pa-234501_mon.cdl",
             "--shared-vars latitude_longitude --rename-regex {rename_regex}",
             r"(?P<newname>.+)_\d+",
+            None,
             "fld_.+",
             217,
         ),
@@ -23,6 +24,7 @@ from splitnc import determine_field_vars
             "aiihca.pe-234501_dai.cdl",
             "--shared-vars latitude_longitude --rename-regex {rename_regex}",
             r"(?P<newname>.+)_\d+",
+            None,
             "fld_.+",
             36,
         ),
@@ -31,6 +33,7 @@ from splitnc import determine_field_vars
             "iceh-1monthly-mean_2345-01.cdl",
             "--shared-vars uarea,tmask,tarea --excluded-vars VGRDb,VGRDi,VGRDs",
             None,
+            ["VGRDb", "VGRDi", "VGRDs"],
             "(ai|dv|si).+",
             53,
         ),
@@ -39,6 +42,7 @@ from splitnc import determine_field_vars
             "iceh-1daily-mean_2345-01.cdl",
             "--shared-vars uarea,tmask,tarea --excluded-vars VGRD.",
             None,
+            ["VGRD."],
             "(ai|dv|si).+",
             25,
         ),
@@ -48,6 +52,7 @@ from splitnc import determine_field_vars
             "aiihca.pa-234501_mon.cdl",
             "--shared-vars latitude_lon.+ --rename-regex {rename_regex}",
             r"(?P<newname>.+)_\d+",
+            None,
             "fld_.+",
             217,
         ),
@@ -57,6 +62,7 @@ from splitnc import determine_field_vars
             "aiihca.pa-234501_mon.cdl",
             "--field-vars fld_s03i257 --shared-vars latitude_longitude --rename-regex {rename_regex}",
             r"(?P<newname>.+)_\d+",
+            None,
             "fld_.+",
             1,
         ),
@@ -66,6 +72,7 @@ from splitnc import determine_field_vars
             "simple_cellmethod_rename.cdl",
             "--shared-vars secondary_field --rename-regex {rename_regex}",
             r"(?P<newname>.+)_\d+",
+            None,
             "field",
             1,
         ),
@@ -78,6 +85,7 @@ from splitnc import determine_field_vars
             "aiihca.pe-234501_dai.cdl",
             "--field-vars fld_s03i23.* --shared-vars latitude_longitude --rename-regex {rename_regex}",
             r"(?P<newname>.+)_\d+",
+            None,
             "fld_s03i23.+",
             6,
         ),
@@ -86,14 +94,15 @@ from splitnc import determine_field_vars
             "simple_coords_extra_space.cdl",
             "",
             None,
+            None,
             "field",
             1,
         ),
     ],
 )
 @pytest.mark.parametrize("use_cmdline_file", [True, False])
-def test_splitnc(tmp_path, cdl_file, cmd_options, rename_regex, field_regex,
-    num_nc_files, use_cmdline_file):
+def test_splitnc(tmp_path, cdl_file, cmd_options, rename_regex, excluded_vars,
+    field_regex, num_nc_files, use_cmdline_file):
     """
     Test running splitnc from the command line
     """
@@ -140,8 +149,15 @@ def test_splitnc(tmp_path, cdl_file, cmd_options, rename_regex, field_regex,
 
         # Check none of the variables/coordinates/dims/bounds/cell_methods in
         # the file match the rename regex
-        if rename_regex:
-            for v in ds.variables:
+        # Also check none of the vars match excluded_vars
+        for v in ds.variables:
+            if excluded_vars:
+                # check excluded_vars don't match v
+                for exc_v in excluded_vars:
+                    assert not re.match(exc_v, v), \
+                    f"{v} - variable should have been excluded"
+
+            if rename_regex:
                 # variable name
                 assert not re.match(rename_regex, v), \
                     f"{v} - variable hasn't been renamed"
