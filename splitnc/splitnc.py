@@ -232,6 +232,91 @@ def update_history_attr(ds, new_history):
     ds.attrs["history"] = old_history + new_history
 
 
+def build_filename(ds, field_name, input_filepath, esm1p6_filename=True, output_file_freq="1yr"):
+    """
+    Build the filename used for the output.
+
+    If esm1p6_filename=False then <field_name>_<orginal_file_name> will be used.
+
+    Otherwise a filename that follows the ESM1.6 naming scheme will be used:
+    {model}.{component}.{dimensions}.{field}.{freq}.{time_cell_method}.{datestamp}.nc
+    More info here: https://access-om3-configs.access-hive.org.au/configurations/Ocean_diagnostics/
+    Elements of this schema will be deduced from the Dataset, the original filename,
+    and the given output file frequency.
+
+    TODO: Consider moving some of these deductions into global attributes
+    TODO: Cover more cases (e.g. what do hourly outputs look like from esm1.6?)
+    """
+    if not esm1p6_filename:
+        return f"{field_name}_{input_filepath.name}"
+
+    template = "{model}.{component}.{dimensions}.{field}.{freq}{time_cell_method}{datestamp}.nc"
+
+    # Model is always access-esm1p6
+    d = {"model": "access-esm1p6"}
+
+    # Component: either CICE5 or UM7.3
+    source = ds.attrs["source"]
+    if "Los Alamos Sea Ice Model (CICE) Version 5" in source:
+        d["component"] = "cice5"
+    elif "Data from Met Office Unified Model" in source and \
+        ds.attrs['um_version'] == "7.3":
+        d["component"] = "um7p3"
+    else:
+        raise ValueError(f"Unknown source, {source}, while building output filename for field {field_name} and {input_filepath}")
+
+    # Dimensions: Don't count time when seeing if field is 2d or 3d
+    ndims = len([d for d in ds[field_name].dims if d!='time'])
+    if ndims == 2:
+        d["dimensions"] = "2d"
+    elif ndims == 3:
+        d["dimensions"] = "3d"
+    else:
+        raise ValueError(f"Unexpected number for dimensions, {ndims}, while building output filename for field {field_name} and {input_filepath}")
+
+    # Field name is already known
+    d["field"] = field_name
+
+    # Frequency: use fx if no time dim
+    if 'time' not in ds[field_name].dims:
+        d["freq"] = "fx"
+    else:
+        # Attempt to parse from expected filenames
+        if "iceh-1daily-" in input_filepath.name or "_dai.nc" in input_filepath.name:
+            d["freq"] = "1day"
+        elif "iceh-1monthly-" in input_filepath.name or "_mon.nc" in input_filepath.name:
+            d["freq"] = "1mon"
+        else:
+            raise ValueError(f"Unable to deduce frequency from filename while building output filename for {input_filepath}")
+
+    # Time cell_method: Should be able to deduce from the cell_method
+    cell_method_regx = r"time: (\w+)"
+    try:
+        if m:= re.search(cell_method_regx, ds[field_name].attrs["cell_methods"]):
+            # Since this element is optional add the . here
+            d["time_cell_method"] = "." + m[1]
+    except KeyError:
+        # If there are no cell_method omit this element
+        d["time_cell_method"] = ""
+
+    # Datestamp
+    if 'time' not in ds[field_name].dims:
+        # No datetime for fixed files
+        d["datestamp"] = ""
+    else:
+        # Truncate average time val by output file frequency
+        if re.match(r'\d+(yr|dec)', output_file_freq):
+            fmt = '%Y'
+        elif re.match(r'\d+mon', output_file_freq):
+            fmt = '%Y-%m'
+        else:
+            fmt = '%Y-%m-%d'
+        # Get the appropriately truncated datetime for the average time
+        d['datestamp'] = "." + ds['time'].mean().dt.strftime(fmt).data.flatten()[0]
+
+    return template.format(**d)
+
+
 def process_file(
     filepath,
     field_vars=None,
@@ -241,6 +326,7 @@ def process_file(
     output_dir=None,
     overwrite=False,
     update_history=True,
+    esm1p6_filename=True,
 ):
     logging.debug(f"Processing {filepath}")
     filepath = Path(filepath)
@@ -342,18 +428,26 @@ def process_file(
             else:
                 output_dir = filepath.parent
 
-            output_filename = output_dir / f"{v}_{filepath.name}"
-            logging.debug(f"Output filepath is {output_filename}")
+            # Build the output filepath
+            filename = build_filename(
+                ds=ds_v,
+                field_name=v,
+                input_filepath=filepath,
+                esm1p6_filename=esm1p6_filename,
+            )
+            output_filepath = output_dir / filename
+            logging.debug(f"Output filepath is {output_filepath}")
 
-            if not overwrite and output_filename.exists():
-                logging.error(f"Output file already exists - {output_filename}")
+            # Write to file
+            if not overwrite and output_filepath.exists():
+                logging.error(f"Output file already exists - {output_filepath}")
                 logging.error("Use --overwrite to overwrite existing files")
 
-                raise FileExistsError(f"{output_filename} already exists")
+                raise FileExistsError(f"{output_filepath} already exists")
 
             logging.debug("Creating parent directory and writing to output file")
-            output_filename.parent.mkdir(parents=True, exist_ok=True)
-            ds_v.to_netcdf(output_filename)
+            output_filepath.parent.mkdir(parents=True, exist_ok=True)
+            ds_v.to_netcdf(output_filepath)
 
 
 #### Main
@@ -426,6 +520,14 @@ def arg_parse(cmdline_args=None):
         'rename it to "time".',
     )
     parser.add_argument(
+        "--use-esm1p6-filenames",
+        action="store_true",
+        help="Use the ESM1.6 filename pattern for the output files: "
+        "access-esm1p6.{component}.{dimensions}.{field}.{freq}.{time_cell_method}.{datestamp}.nc"
+        " splitnc will attempt to deduce all the components of the filename. "
+        "If this option is not given {field}_{original_filename} will be used."
+    )
+    parser.add_argument(
         "--output-dir",
         help="Output directory for the processed files. If not given output "
         "files will be placed in the same directory as the original file.",
@@ -496,6 +598,7 @@ def main():
             output_dir=args.output_dir,
             overwrite=args.overwrite,
             update_history=not args.dont_update_history,
+            esm1p6_filename=args.use_esm1p6_filenames,
         )
 
 

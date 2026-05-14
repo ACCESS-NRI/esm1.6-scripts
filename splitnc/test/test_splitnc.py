@@ -1,10 +1,11 @@
+from pathlib import Path
 import pytest
 import re
 
 import xarray as xr
 
 from common import runcmd, make_nc
-from splitnc import determine_field_vars
+from splitnc import determine_field_vars, build_filename
 
 
 @pytest.mark.parametrize(
@@ -20,9 +21,27 @@ from splitnc import determine_field_vars
             217,
         ),
         (
+            # Test a monthly atmosphere file with esm1.6 filenames
+            "aiihca.pa-234501_mon.cdl",
+            "--shared-vars latitude_longitude --rename-regex {rename_regex} --use-esm1p6-filenames",
+            r"(?P<newname>.+)_\d+",
+            None,
+            "fld_.+",
+            217,
+        ),
+        (
             # Test a daily atmosphere file
             "aiihca.pe-234501_dai.cdl",
             "--shared-vars latitude_longitude --rename-regex {rename_regex}",
+            r"(?P<newname>.+)_\d+",
+            None,
+            "fld_.+",
+            36,
+        ),
+        (
+            # Test a daily atmosphere file with esm1.6 filenames
+            "aiihca.pe-234501_dai.cdl",
+            "--shared-vars latitude_longitude --rename-regex {rename_regex} --use-esm1p6-filenames",
             r"(?P<newname>.+)_\d+",
             None,
             "fld_.+",
@@ -38,9 +57,27 @@ from splitnc import determine_field_vars
             53,
         ),
         (
+            # Test a monthly ice file with esm1.6 filenames
+            "iceh-1monthly-mean_2345-01.cdl",
+            "--shared-vars uarea,tmask,tarea --excluded-vars VGRDb,VGRDi,VGRDs --use-esm1p6-filenames",
+            None,
+            ["VGRDb", "VGRDi", "VGRDs"],
+            "(ai|dv|si).+",
+            53,
+        ),
+        (
             # Test a daily ice file (use a regex for exluded-vars here)
             "iceh-1daily-mean_2345-01.cdl",
             "--shared-vars uarea,tmask,tarea --excluded-vars VGRD.",
+            None,
+            ["VGRD."],
+            "(ai|dv|si).+",
+            25,
+        ),
+        (
+            # Test a daily ice file (use a regex for exluded-vars here) with esm1.6 filenames
+            "iceh-1daily-mean_2345-01.cdl",
+            "--shared-vars uarea,tmask,tarea --excluded-vars VGRD.  --use-esm1p6-filenames",
             None,
             ["VGRD."],
             "(ai|dv|si).+",
@@ -111,10 +148,11 @@ def test_splitnc(tmp_path, cdl_file, cmd_options, rename_regex, excluded_vars,
 
     output_dir = tmp_path / "single_field"
     
+    cmd_options += f" --output-dir {output_dir} {ncfile}"
+
     # Are we using a cmdlinefile?
     if use_cmdline_file:
-        cmd_options = cmd_options.format(rename_regex=rename_regex) + \
-            f" --output-dir {output_dir} {ncfile}"
+        cmd_options = cmd_options.format(rename_regex=rename_regex)
 
         cmdline_file_path = tmp_path / "cmdline_file"
         with open(cmdline_file_path, 'w') as f:
@@ -124,8 +162,7 @@ def test_splitnc(tmp_path, cdl_file, cmd_options, rename_regex, excluded_vars,
     else:
         # Need to mess about with quotes around the regex
         rename_regex = f"'{rename_regex}'"
-        cmd_options = cmd_options.format(rename_regex=rename_regex) + \
-            f" --output-dir {output_dir} {ncfile}"
+        cmd_options = cmd_options.format(rename_regex=rename_regex)
 
         cmd = f"python splitnc.py {cmd_options}"
 
@@ -248,3 +285,72 @@ def test_determine_field_vars(tmp_path, cdl_file, field_regex):
 
         # Check all the discovered fields match the regex
         assert all([re.match(field_regex, v) for v in field_list])
+
+
+@pytest.mark.parametrize("use_esm1p6", [True, False])
+@pytest.mark.parametrize(
+    "cdl_file,field,output_freq,expected_filename",
+    [
+        (
+            # Test a monthly atmos 2D field
+            "aiihca.pa-234501_mon.cdl",
+            "fld_s00i023",
+            "1yr",
+            "access-esm1p6.um7p3.2d.fld_s00i023.1mon.mean.2345.nc",
+        ),
+        (
+            # Test a monthly atmos 2D field but monthly output
+            "aiihca.pa-234501_mon.cdl",
+            "fld_s00i023",
+            "1mon",
+            "access-esm1p6.um7p3.2d.fld_s00i023.1mon.mean.2345-01.nc",
+        ),
+        (
+            # Test a monthly atmos 3D field
+            "aiihca.pa-234501_mon.cdl",
+            "fld_s00i407",
+            "1yr",
+            "access-esm1p6.um7p3.3d.fld_s00i407.1mon.mean.2345.nc",
+        ),
+        (
+            # Test a daily atmos 3D field
+            "aiihca.pe-234501_dai.cdl",
+            "fld_s30i207",
+            "1yr",
+            "access-esm1p6.um7p3.3d.fld_s30i207.1day.mean.2345.nc",
+        ),
+        (
+            # Test a daily ice 3D field
+            "iceh-1daily-mean_2345-01.cdl",
+            "aice",
+            "1yr",
+            "access-esm1p6.cice5.2d.aice.1day.mean.2345.nc",
+        ),
+        (
+            # Test a daily ice fx field
+            "iceh-1daily-mean_2345-01.cdl",
+            "tarea",
+            "1yr",
+            "access-esm1p6.cice5.2d.tarea.fx.nc",
+        ),
+    ]
+)
+def test_build_filenames(tmp_path, use_esm1p6, cdl_file, field, output_freq, expected_filename):
+    # Create a file to test on
+    ncfile = make_nc(tmp_path, f"test/data/{cdl_file}")
+
+    decoder = xr.coders.CFDatetimeCoder(time_unit='us')
+    with xr.open_dataset(ncfile, decode_times=decoder) as ds:
+        actual_filename = build_filename(
+            ds,
+            field,
+            Path(cdl_file.replace('.cdl', '.nc')),
+            esm1p6_filename=use_esm1p6,
+            output_file_freq=output_freq,
+        )
+
+    if not use_esm1p6:
+        # If we're not using the ESM1.6 filepattern we expect field_file.nc
+        expected_filename = f"{field}_{Path(cdl_file.replace('.cdl', '.nc'))}"
+
+    assert actual_filename == expected_filename
