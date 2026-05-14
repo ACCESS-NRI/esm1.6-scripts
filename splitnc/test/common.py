@@ -19,7 +19,8 @@ def runcmd(cmd, wd=None, env=None):
 
 
 def make_nc(tmp_path, cdl_file):
-    filepath = f"{tmp_path}/{cdl_file.replace(".cdl", ".nc")}"
+    nc_filename = Path(cdl_file).with_suffix(".nc").name
+    filepath = f"{tmp_path}/{nc_filename}"
     cmd = f"ncgen -o {filepath}  {cdl_file}"
 
     runcmd(cmd)
