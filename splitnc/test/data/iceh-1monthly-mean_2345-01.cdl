@@ -601,4 +601,10 @@ variables:
 		:comment2 = "File started on model date 23450201" ;
 		:history = "This dataset was created on 2025-12-04 at 19:07:59.0" ;
 		:io_flavor = "io_netcdf" ;
+data:
+
+ time = 856143.5 ;
+
+ time_bounds =
+  856128, 856159 ;
 }
