@@ -243,9 +243,6 @@ def build_filename(ds, field_name, input_filepath, esm1p6_filename=True, output_
     More info here: https://access-om3-configs.access-hive.org.au/configurations/Ocean_diagnostics/
     Elements of this schema will be deduced from the Dataset, the original filename,
     and the given output file frequency.
-
-    TODO: Consider moving some of these deductions into global attributes
-    TODO: Cover more cases (e.g. what do hourly outputs look like from esm1.6?)
     """
     if not esm1p6_filename:
         return f"{field_name}_{input_filepath.name}"
@@ -282,6 +279,7 @@ def build_filename(ds, field_name, input_filepath, esm1p6_filename=True, output_
         d["freq"] = "fx"
     else:
         # Attempt to parse from expected filenames
+        # TODO: what do hourly filenames look like? What about Xhr? Yearly outputs? subhourly?
         if "iceh-1daily-" in input_filepath.name or "_dai.nc" in input_filepath.name:
             d["freq"] = "1day"
         elif "iceh-1monthly-" in input_filepath.name or "_mon.nc" in input_filepath.name:
