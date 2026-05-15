@@ -77,7 +77,7 @@ from splitnc import determine_field_vars, build_filename
         (
             # Test a daily ice file (use a regex for exluded-vars here) with esm1.6 filenames
             "iceh-1daily-mean_2345-01.cdl",
-            "--shared-vars uarea,tmask,tarea --excluded-vars VGRD.  --use-esm1p6-filenames",
+            "--shared-vars uarea,tmask,tarea --excluded-vars VGRD. --use-esm1p6-filenames",
             None,
             ["VGRD."],
             "(ai|dv|si).+",
