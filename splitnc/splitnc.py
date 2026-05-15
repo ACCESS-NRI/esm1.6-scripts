@@ -307,8 +307,10 @@ def build_filename(ds, field_name, input_filepath, esm1p6_filename=True, output_
             fmt = '%Y'
         elif re.match(r'\d+mon', output_file_freq):
             fmt = '%Y-%m'
-        else:
+        elif re.match(r'\d+day', output_file_freq):
             fmt = '%Y-%m-%d'
+        else:
+            fmt = '%Y-%m-%dT%H:%M:%S'
         # Get the appropriately truncated datetime for the average time
         d['datestamp'] = "." + ds['time'].mean().dt.strftime(fmt).data.flatten()[0]
 
