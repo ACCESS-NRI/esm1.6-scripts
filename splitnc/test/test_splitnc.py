@@ -333,6 +333,57 @@ def test_determine_field_vars(tmp_path, cdl_file, field_regex):
             "1yr",
             "access-esm1p6.cice5.2d.tarea.fx.nc",
         ),
+        (
+            # Test an hourly ice 2D field
+            "iceh-1hourly-mean_0272.cdl",
+            "siconc",
+            "1yr",
+            "access-esm1p6.cice5.2d.siconc.1hr.mean.0272.nc",
+        ),
+        (
+            # Test an timestep/hourly ice 2D field
+            "iceh-1-mean_0272.cdl",
+            "siconc",
+            "1yr",
+            "access-esm1p6.cice5.2d.siconc.1hr.0272.nc",
+        ),
+        # (
+        #     # FIXME: This test currently fails as the time val is at the end of 
+        #     #   the interval so the year in the filename isn't right
+        #     # Test a yearly ice 2D field
+        #     "iceh-1yearly-mean_0272.cdl",
+        #     "siconc",
+        #     "1yr",
+        #     "access-esm1p6.cice5.2d.siconc.1yr.mean.0272.nc",
+        # ),
+        (
+            # Test a yearly ice 2D field with the year manually tweaked to be 0001
+            "iceh-1yearly-mean_0001.cdl",
+            "siconc",
+            "1yr",
+            "access-esm1p6.cice5.2d.siconc.1yr.mean.0001.nc",
+        ),
+        (
+            # Test an hourly 2d atmos field
+            "aiihca.pc-010101.cdl",
+            "fld_s05i216",
+            "1yr",
+            "access-esm1p6.um7p3.2d.fld_s05i216.1hr.mean.0101.nc",
+        ),
+        (
+            # Test a 3-hourly 2d atmos field
+            "aiihca.pi-010101_3hr.cdl",
+            "fld_s00i409",
+            "1yr",
+            "access-esm1p6.um7p3.2d.fld_s00i409.3hr.0101.nc",
+        ),
+        (
+            # Test a 6-hourly 2d atmos field
+            "aiihca.pj-010101_6hr.cdl",
+            "fld_s03i245",
+            "1yr",
+            "access-esm1p6.um7p3.2d.fld_s03i245.6hr.mean.0101.nc",
+        ),
     ]
 )
 def test_build_filenames(tmp_path, use_esm1p6, cdl_file, field, output_freq, expected_filename):

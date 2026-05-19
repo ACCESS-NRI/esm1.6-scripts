@@ -279,11 +279,20 @@ def build_filename(ds, field_name, input_filepath, esm1p6_filename=True, output_
         d["freq"] = "fx"
     else:
         # Attempt to parse from expected filenames
-        # TODO: what do hourly filenames look like? What about Xhr? Yearly outputs? subhourly?
-        if "iceh-1daily-" in input_filepath.name or "_dai.nc" in input_filepath.name:
-            d["freq"] = "1day"
-        elif "iceh-1monthly-" in input_filepath.name or "_mon.nc" in input_filepath.name:
+        # TODO: what do yearly filenames look like for atmos?
+        #  What about subhourly for ice/atmos?
+        filename = input_filepath.name
+        if "iceh-1yearly-" in filename:
+            d["freq"] = "1yr"
+        elif "iceh-1monthly-" in filename or "_mon.nc" in filename:
             d["freq"] = "1mon"
+        elif "iceh-1daily-" in filename or "_dai.nc" in filename:
+            d["freq"] = "1day"
+        elif match:=re.match(".+_(\d+hr).nc", filename):
+            # Get the frequency from the atmosphere regex match for Xhr
+            d["freq"] = match[1]
+        elif "iceh-1hourly-" in filename or "iceh-1-" in filename or "aiihca.pc" in filename:
+            d["freq"] = "1hr"
         else:
             raise ValueError(f"Unable to deduce frequency from filename while building output filename for {input_filepath}")
 
@@ -303,14 +312,15 @@ def build_filename(ds, field_name, input_filepath, esm1p6_filename=True, output_
         d["datestamp"] = ""
     else:
         # Truncate average time val by output file frequency
+        # datetimes do not correctly zero-pad so need to use %4Y
         if re.match(r'\d+(yr|dec)', output_file_freq):
-            fmt = '%Y'
+            fmt = '%4Y'
         elif re.match(r'\d+mon', output_file_freq):
-            fmt = '%Y-%m'
+            fmt = '%4Y-%m'
         elif re.match(r'\d+day', output_file_freq):
-            fmt = '%Y-%m-%d'
+            fmt = '%4Y-%m-%d'
         else:
-            fmt = '%Y-%m-%dT%H:%M:%S'
+            fmt = '%4Y-%m-%dT%H:%M:%S'
         # Get the appropriately truncated datetime for the average time
         d['datestamp'] = "." + ds['time'].mean().dt.strftime(fmt).data.flatten()[0]
 
