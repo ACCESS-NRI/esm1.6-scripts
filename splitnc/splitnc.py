@@ -288,7 +288,7 @@ def build_filename(ds, field_name, input_filepath, esm1p6_filename=True, output_
             d["freq"] = "1mon"
         elif "iceh-1daily-" in filename or "_dai.nc" in filename:
             d["freq"] = "1day"
-        elif match:=re.match(".+_(\d+hr).nc", filename):
+        elif match:=re.match(r".+_(\d+hr).nc", filename):
             # Get the frequency from the atmosphere regex match for Xhr
             d["freq"] = match[1]
         elif "iceh-1hourly-" in filename or "iceh-1-" in filename or "aiihca.pc" in filename:
@@ -321,8 +321,21 @@ def build_filename(ds, field_name, input_filepath, esm1p6_filename=True, output_
             fmt = '%4Y-%m-%d'
         else:
             fmt = '%4Y-%m-%dT%H:%M:%S'
+
         # Get the appropriately truncated datetime for the average time
-        d['datestamp'] = "." + ds['time'].mean().dt.strftime(fmt).data.flatten()[0]
+        try:
+            # Try the time bounds
+            time_arr = ds[ds['time'].attrs["bounds"]]
+            logging.debug("Using time bounds to calculate filename timestamp")
+        except KeyError:
+            # If there are no time bounds just use time
+            logging.debug("Unable to find time bounds, using time to calculate filename timestamp")
+            time_arr = ds['time']
+
+        # Calculate the middle point
+        first, last = time_arr.min(), time_arr.max()
+        datestamp_dt = (first + (last - first) / 2).dt
+        d['datestamp'] = "." + datestamp_dt.strftime(fmt).data.flatten()[0]
 
     return template.format(**d)
 
@@ -342,7 +355,7 @@ def process_file(
     filepath = Path(filepath)
 
     # Use cftime to suppress warnings
-    decoder = xr.coders.CFDatetimeCoder(use_cftime=True)
+    decoder = xr.coders.CFDatetimeCoder(time_unit='us')
     with xr.open_dataset(filepath, decode_times=decoder) as ds:
         # Resolve any regex in the excluded_vars list
         if excluded_vars:

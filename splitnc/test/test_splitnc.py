@@ -342,20 +342,20 @@ def test_determine_field_vars(tmp_path, cdl_file, field_regex):
         ),
         (
             # Test an timestep/hourly ice 2D field
+            # FIXME: This test currently fails as the start time bounds in this
+            #  file are all 0, which is not correct... will try to fix in the
+            #  source file's creation then update the .cdl
             "iceh-1-mean_0272.cdl",
             "siconc",
             "1yr",
             "access-esm1p6.cice5.2d.siconc.1hr.0272.nc",
         ),
-        # (
-        #     # FIXME: This test currently fails as the time val is at the end of 
-        #     #   the interval so the year in the filename isn't right
-        #     # Test a yearly ice 2D field
-        #     "iceh-1yearly-mean_0272.cdl",
-        #     "siconc",
-        #     "1yr",
-        #     "access-esm1p6.cice5.2d.siconc.1yr.mean.0272.nc",
-        # ),
+        (
+            "iceh-1yearly-mean_0272.cdl",
+            "siconc",
+            "1yr",
+            "access-esm1p6.cice5.2d.siconc.1yr.mean.0272.nc",
+        ),
         (
             # Test a yearly ice 2D field with the year manually tweaked to be 0001
             "iceh-1yearly-mean_0001.cdl",
