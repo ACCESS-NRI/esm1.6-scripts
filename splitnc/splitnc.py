@@ -478,6 +478,11 @@ def process_file(
 
 #### Main
 def arg_parse(cmdline_args=None):
+    # If -c/--command-line-file is being used then all other args are ignored
+    # This affects which are "required" (or nargs for filepaths)
+    args = sys.argv if cmdline_args is None else cmdline_args
+    cmd_file_arg_present = "-c" in args or "--command-line-file" in args
+
     parser = argparse.ArgumentParser(
         prog="splitnc",
         description="Splits a multi-field netCDF file into separate one-field files",
@@ -504,7 +509,7 @@ def arg_parse(cmdline_args=None):
     # required and --cmd-line-file can be used on it's own
     parser.add_argument(
         "filepaths",
-        nargs="*",
+        nargs="*" if cmd_file_arg_present else "+",
         default=[],
         type=globbable_string_list,
         help="One or more filepaths to process",
