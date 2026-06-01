@@ -232,7 +232,7 @@ def update_history_attr(ds, new_history):
     ds.attrs["history"] = old_history + new_history
 
 
-def build_filename(ds, field_name, input_filepath, esm1p6_filename=True, output_file_freq="1yr"):
+def build_filename(ds, field_name, input_filepath, esm1p6_filename=True, file_freq="1yr"):
     """
     Build the filename used for the output.
 
@@ -314,11 +314,11 @@ def build_filename(ds, field_name, input_filepath, esm1p6_filename=True, output_
     else:
         # Truncate average time val by output file frequency
         # datetimes do not correctly zero-pad so need to use %4Y
-        if re.match(r'\d+(yr|dec)', output_file_freq):
+        if re.match(r'\d+(yr|dec)', file_freq):
             fmt = '%4Y'
-        elif re.match(r'\d+mon', output_file_freq):
+        elif re.match(r'\d+mon', file_freq):
             fmt = '%4Y-%m'
-        elif re.match(r'\d+day', output_file_freq):
+        elif re.match(r'\d+day', file_freq):
             fmt = '%4Y-%m-%d'
         else:
             fmt = '%4Y-%m-%dT%H:%M:%S'
@@ -351,6 +351,7 @@ def process_file(
     overwrite=False,
     update_history=True,
     esm1p6_filename=True,
+    file_freq="1yr",
 ):
     logging.debug(f"Processing {filepath}")
     filepath = Path(filepath)
@@ -458,6 +459,7 @@ def process_file(
                 field_name=v,
                 input_filepath=filepath,
                 esm1p6_filename=esm1p6_filename,
+                file_freq=file_freq,
             )
             output_filepath = output_dir / filename
             logging.debug(f"Output filepath is {output_filepath}")
@@ -552,6 +554,16 @@ def arg_parse(cmdline_args=None):
         "If this option is not given {field}_{original_filename} will be used."
     )
     parser.add_argument(
+        "--file-freq",
+        default="1yr",
+        help="Specify the frequency of the files (not the data), e.g. if each "
+        "file contains a month of data then the file-frequency is '1mon'. Used "
+        "to determine the resolution of the timestamp for ESM1.6 filenames. "
+        "Follows the ACCESS frequency vocabulary (e.g. '1yr', '1mon', '1day', "
+        "'1hr'), any unrecognised frequency will use the full timestamp. "
+        "Defaults to '1yr'."
+    )
+    parser.add_argument(
         "--output-dir",
         help="Output directory for the processed files. If not given output "
         "files will be placed in the same directory as the original file.",
@@ -623,6 +635,7 @@ def main():
             overwrite=args.overwrite,
             update_history=not args.dont_update_history,
             esm1p6_filename=args.use_esm1p6_filenames,
+            file_freq=args.file_freq,
         )
 
 

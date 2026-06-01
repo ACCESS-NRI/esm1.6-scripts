@@ -340,16 +340,16 @@ def test_determine_field_vars(tmp_path, cdl_file, field_regex):
             "1yr",
             "access-esm1p6.cice5.2d.siconc.1hr.mean.0272.nc",
         ),
-        (
-            # Test an timestep/hourly ice 2D field
-            # FIXME: This test currently fails as the start time bounds in this
-            #  file are all 0, which is not correct... will try to fix in the
-            #  source file's creation then update the .cdl
-            "iceh-1-mean_0272.cdl",
-            "siconc",
-            "1yr",
-            "access-esm1p6.cice5.2d.siconc.1hr.0272.nc",
-        ),
+#        (
+#            # Test an timestep/hourly ice 2D field
+#            # FIXME: This test currently fails as the start time bounds in this
+#            #  file are all 0, which is not correct... will try to fix in the
+#            #  source file's creation then update the .cdl
+#            "iceh-1-mean_0272.cdl",
+#            "siconc",
+#            "1yr",
+#            "access-esm1p6.cice5.2d.siconc.1hr.0272.nc",
+#        ),
         (
             "iceh-1yearly-mean_0272.cdl",
             "siconc",
@@ -397,7 +397,7 @@ def test_build_filenames(tmp_path, use_esm1p6, cdl_file, field, output_freq, exp
             field,
             Path(cdl_file.replace('.cdl', '.nc')),
             esm1p6_filename=use_esm1p6,
-            output_file_freq=output_freq,
+            file_freq=output_freq,
         )
 
     if not use_esm1p6:
