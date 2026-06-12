@@ -291,7 +291,7 @@ def build_filename(ds, field_name, input_filepath, esm1p6_filename=True, file_fr
         elif match:=re.match(r".+_(\d+hr).nc", filename):
             # Get the frequency from the atmosphere regex match for Xhr
             d["freq"] = match[1]
-        elif "iceh-1hourly-" in filename or "iceh-1-" in filename or "aiihca.pc" in filename:
+        elif "iceh-1hourly-" in filename or "aiihca.pc" in filename:
             d["freq"] = "1hr"
         else:
             # No sub-hourly frequency data expected atmosphere

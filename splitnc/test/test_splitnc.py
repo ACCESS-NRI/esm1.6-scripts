@@ -340,16 +340,17 @@ def test_determine_field_vars(tmp_path, cdl_file, field_regex):
             "1yr",
             "access-esm1p6.cice5.2d.siconc.1hr.mean.0272.nc",
         ),
-#        (
-#            # Test an timestep/hourly ice 2D field
-#            # FIXME: This test currently fails as the start time bounds in this
-#            #  file are all 0, which is not correct... will try to fix in the
-#            #  source file's creation then update the .cdl
-#            "iceh-1-mean_0272.cdl",
-#            "siconc",
-#            "1yr",
-#            "access-esm1p6.cice5.2d.siconc.1hr.0272.nc",
-#        ),
+        (
+            # Test an timestep/hourly ice 2D field
+            # The frequency of timestep files is not defined, so it will fail
+            # to build an ESM1.6 filename
+            # The time bounds for this file are also incorrect but we expect a
+            # failure anyway so it doesn't matter
+            "iceh-1-mean_0272.cdl",
+            "siconc",
+            "1yr",
+            ValueError("Unable to deduce frequency"),
+        ),
         (
             "iceh-1yearly-mean_0272.cdl",
             "siconc",
@@ -390,18 +391,27 @@ def test_build_filenames(tmp_path, use_esm1p6, cdl_file, field, output_freq, exp
     # Create a file to test on
     ncfile = make_nc(tmp_path, f"test/data/{cdl_file}")
 
-    decoder = xr.coders.CFDatetimeCoder(time_unit='us')
-    with xr.open_dataset(ncfile, decode_times=decoder) as ds:
-        actual_filename = build_filename(
-            ds,
-            field,
-            Path(cdl_file.replace('.cdl', '.nc')),
-            esm1p6_filename=use_esm1p6,
-            file_freq=output_freq,
-        )
+    def _build_filename():
+        decoder = xr.coders.CFDatetimeCoder(time_unit='us')
+        with xr.open_dataset(ncfile, decode_times=decoder) as ds:
+            actual_filename = build_filename(
+                ds,
+                field,
+                Path(cdl_file.replace('.cdl', '.nc')),
+                esm1p6_filename=use_esm1p6,
+                file_freq=output_freq,
+            )
 
-    if not use_esm1p6:
-        # If we're not using the ESM1.6 filepattern we expect field_file.nc
-        expected_filename = f"{field}_{Path(cdl_file.replace('.cdl', '.nc'))}"
+        return actual_filename
 
-    assert actual_filename == expected_filename
+    if use_esm1p6 and isinstance(expected_filename, Exception):
+        with pytest.raises(type(expected_filename), match=str(expected_filename)):
+            _ = _build_filename()
+    else:
+        actual_filename = _build_filename()
+
+        if not use_esm1p6:
+            # If we're not using the ESM1.6 filepattern we expect field_file.nc
+            expected_filename = f"{field}_{Path(cdl_file.replace('.cdl', '.nc'))}"
+
+        assert actual_filename == expected_filename
