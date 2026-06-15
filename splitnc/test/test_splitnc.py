@@ -322,9 +322,9 @@ def test_determine_field_vars(tmp_path, cdl_file, field_regex):
         (
             # Test a daily ice 3D field
             "iceh-1daily-mean_2345-01.cdl",
-            "aice",
+            "siitdconc",
             "1yr",
-            "access-esm1p6.cice5.2d.aice.1day.mean.2345.nc",
+            "access-esm1p6.cice5.3d.siitdconc.1day.mean.2345.nc",
         ),
         (
             # Test a daily ice fx field
