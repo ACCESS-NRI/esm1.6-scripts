@@ -334,6 +334,27 @@ def test_determine_field_vars(tmp_path, cdl_file, field_regex):
             "access-esm1p6.cice5.2d.tarea.fx.nc",
         ),
         (
+            # Test a 2-hourly ice 2D field
+            "iceh-2hourly-mean_0272.cdl",
+            "siconc",
+            "1yr",
+            "access-esm1p6.cice5.2d.siconc.2hr.mean.0272.nc",
+        ),
+        (
+            # Test a 2-daily ice 2D field
+            "iceh-2daily-mean_0272.cdl",
+            "siconc",
+            "1yr",
+            "access-esm1p6.cice5.2d.siconc.2day.mean.0272.nc",
+        ),
+        (
+            # Test a 2-monthly ice 2D field
+            "iceh-2monthly-mean_0272.cdl",
+            "siconc",
+            "1yr",
+            "access-esm1p6.cice5.2d.siconc.2mon.mean.0272.nc",
+        ),
+        (
             # Test an hourly ice 2D field
             "iceh-1hourly-mean_0272.cdl",
             "siconc",

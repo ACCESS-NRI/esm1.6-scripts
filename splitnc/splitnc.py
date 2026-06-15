@@ -280,17 +280,31 @@ def build_filename(ds, field_name, input_filepath, esm1p6_filename=False, file_f
     else:
         # Attempt to parse from expected filenames
         filename = input_filepath.name
-        if "iceh-1yearly-" in filename:
-            # There shouldn't be any yearly freq files for atmosphere
-            d["freq"] = "1yr"
-        elif "iceh-1monthly-" in filename or "_mon.nc" in filename:
+
+        # Define the expected ice filenames
+        # e.g. iceh-2hourly-mean_0272.nc, iceh-1yearly-mean_0272.nc
+        ice_regex = r"iceh-(?P<num>\d+)(?P<unit>yearly|monthly|daily|hourly)-"
+        ice_unit_mapping = {
+            "yearly": "yr",
+            "monthly": "mon",
+            "daily": "day",
+            "hourly": "hr"
+        }
+
+        if match:=re.match(ice_regex, filename):
+            # Extract the frequency number and units for ice files
+            d["freq"] = f"{match['num']}{ice_unit_mapping[match['unit']]}"
+        elif "_mon.nc" in filename:
+            # Match the monthly pattern for atmosphere files
             d["freq"] = "1mon"
-        elif "iceh-1daily-" in filename or "_dai.nc" in filename:
+        elif "_dai.nc" in filename:
+            # Match the daily pattern for atmosphere files
             d["freq"] = "1day"
         elif match:=re.match(r".+_(\d+hr).nc", filename):
             # Get the frequency from the atmosphere regex match for Xhr
             d["freq"] = match[1]
-        elif "iceh-1hourly-" in filename or "aiihca.pc" in filename:
+        elif "aiihca.pc" in filename:
+            # Match another pattern for hourly atmosphere files
             d["freq"] = "1hr"
         else:
             # No sub-hourly frequency data expected
