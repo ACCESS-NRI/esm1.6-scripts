@@ -232,7 +232,7 @@ def update_history_attr(ds, new_history):
     ds.attrs["history"] = old_history + new_history
 
 
-def build_filename(ds, field_name, input_filepath, esm1p6_filename=True, file_freq="1yr"):
+def build_filename(ds, field_name, input_filepath, esm1p6_filename=False, file_freq="1yr"):
     """
     Build the filename used for the output.
 
@@ -349,7 +349,7 @@ def process_file(
     output_dir=None,
     overwrite=False,
     update_history=True,
-    esm1p6_filename=True,
+    esm1p6_filename=False,
     file_freq="1yr",
 ):
     logging.debug(f"Processing {filepath}")
