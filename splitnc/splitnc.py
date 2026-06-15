@@ -279,7 +279,6 @@ def build_filename(ds, field_name, input_filepath, esm1p6_filename=True, file_fr
         d["freq"] = "fx"
     else:
         # Attempt to parse from expected filenames
-        # TODO: Are sub-hourly ice files a thing? What do their filenames look like?
         filename = input_filepath.name
         if "iceh-1yearly-" in filename:
             # There shouldn't be any yearly freq files for atmosphere
@@ -294,7 +293,7 @@ def build_filename(ds, field_name, input_filepath, esm1p6_filename=True, file_fr
         elif "iceh-1hourly-" in filename or "aiihca.pc" in filename:
             d["freq"] = "1hr"
         else:
-            # No sub-hourly frequency data expected atmosphere
+            # No sub-hourly frequency data expected
             raise ValueError(f"Unable to deduce frequency from filename while building output filename for {input_filepath}")
 
     # Time cell_method: Should be able to deduce from the cell_method
