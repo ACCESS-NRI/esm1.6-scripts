@@ -18,7 +18,7 @@ from splitnc import determine_field_vars, build_filename
             r"(?P<newname>.+)_\d+",
             None,
             "fld_.+",
-            217,
+            218,
         ),
         (
             # Test a monthly atmosphere file with esm1.6 filenames
@@ -27,7 +27,7 @@ from splitnc import determine_field_vars, build_filename
             r"(?P<newname>.+)_\d+",
             None,
             "fld_.+",
-            217,
+            218,
         ),
         (
             # Test a daily atmosphere file
@@ -91,7 +91,7 @@ from splitnc import determine_field_vars, build_filename
             r"(?P<newname>.+)_\d+",
             None,
             "fld_.+",
-            217,
+            218,
         ),
         (
             # Test a monthly atmosphere file with a single field with coords that need renaming
@@ -360,6 +360,24 @@ def test_determine_field_vars(tmp_path, cdl_file, field_regex):
             "siconc",
             "1yr",
             "access-esm1p6.cice5.2d.siconc.1hr.mean.0272.nc",
+        ),
+        (
+            # Test an hourly instantaneous ice 2D field
+            # This variable has time_rep = instantaneous
+            # This field was manually added to the .cdl file
+            "iceh-1hourly-mean_0272.cdl",
+            "siconc2",
+            "1yr",
+            "access-esm1p6.cice5.2d.siconc2.1hr.snap.0272.nc",
+        ),
+        (
+            # Test an hourly instantaneous ice 2D field
+            # This variable has time: point in the cell_methods
+            # This field was manually added to the .cdl file
+            "iceh-1hourly-mean_0272.cdl",
+            "siconc3",
+            "1yr",
+            "access-esm1p6.cice5.2d.siconc3.1hr.snap.0272.nc",
         ),
         (
             # Test an timestep/hourly ice 2D field

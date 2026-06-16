@@ -73,8 +73,17 @@ def _build_cell_method(ds, field_name):
     # Time cell_method: Should be able to deduce from the cell_method
     cell_method_regx = r"time: (\w+)"
     try:
+        if 'time_rep' in ds[field_name].attrs and \
+            ds[field_name].attrs['time_rep'] == "instantaneous":
+            # ice files sometimes have time_rep = instantaneous but not
+            # cell_methods = time: point
+            return ".snap"
+
         if m:= re.search(cell_method_regx, ds[field_name].attrs["cell_methods"]):
             method = m[1]
+            if method == "point":
+                method = "snap"
+
             # Since this element is optional add the . here
             return "." + method
     except KeyError:

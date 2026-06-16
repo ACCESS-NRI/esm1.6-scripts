@@ -78,6 +78,25 @@ variables:
 		siconc:_FillValue = 1.e+30f ;
 		siconc:cell_methods = "area: mean where sea time: mean" ;
 		siconc:time_rep = "averaged" ;
+   float siconc2(time, nj, ni) ;
+		siconc2:units = "%" ;
+		siconc2:long_name = "Sea-Ice Area Percentage (Ocean Grid)" ;
+		siconc2:coordinates = "TLON TLAT time" ;
+		siconc2:cell_measures = "area: tarea" ;
+		siconc2:missing_value = 1.e+30f ;
+		siconc2:_FillValue = 1.e+30f ;
+		siconc2:time_rep = "instantaneous" ;
+      siconc2:note = "this variable was manually copied from iced-1-mean_0272.cld and renamed to siconc2 to test time_rep instantaneous" ;
+   float siconc3(time, nj, ni) ;
+		siconc3:units = "%" ;
+		siconc3:long_name = "Sea-Ice Area Percentage (Ocean Grid)" ;
+		siconc3:coordinates = "TLON TLAT time" ;
+		siconc3:cell_measures = "area: tarea" ;
+		siconc3:missing_value = 1.e+30f ;
+		siconc3:_FillValue = 1.e+30f ;
+		siconc3:cell_methods = "area: mean where sea time: point" ;
+		siconc3:time_rep = "averaged" ;
+      siconc3:note = "this variable was manually copied from the original siconc above and renamed to siconc3 to test cell_method time: point" ;
 
 // global attributes:
 		:title = "sea ice model output for CICE" ;
