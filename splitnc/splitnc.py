@@ -10,6 +10,8 @@ import sys
 
 import xarray as xr
 
+from esm1p6 import build_esm1p6_filename
+
 
 def determine_field_vars(ds):
     """
@@ -244,114 +246,11 @@ def build_filename(ds, field_name, input_filepath, esm1p6_filename=False, file_f
     Elements of this schema will be deduced from the Dataset, the original filename,
     and the given output file frequency.
     """
-    if not esm1p6_filename:
+    if esm1p6_filename:
+        return build_esm1p6_filename(ds, field_name, input_filepath,
+            esm1p6_filename=esm1p6_filename, file_freq=file_freq)
+    else:
         return f"{field_name}_{input_filepath.name}"
-
-    template = "{model}.{component}.{dimensions}.{field}.{freq}{time_cell_method}{datestamp}.nc"
-
-    # Model is always access-esm1p6
-    d = {"model": "access-esm1p6"}
-
-    # Component: either CICE5 or UM7.3
-    source = ds.attrs["source"]
-    if "Los Alamos Sea Ice Model (CICE) Version 5" in source:
-        d["component"] = "cice5"
-    elif "Data from Met Office Unified Model" in source and \
-        ds.attrs['um_version'] == "7.3":
-        d["component"] = "um7p3"
-    else:
-        raise ValueError(f"Unknown source, {source}, while building output filename for field {field_name} and {input_filepath}")
-
-    # Dimensions: Don't count time when seeing if field is 2d or 3d
-    ndims = len([d for d in ds[field_name].dims if d!='time'])
-    if ndims == 2:
-        d["dimensions"] = "2d"
-    elif ndims == 3:
-        d["dimensions"] = "3d"
-    else:
-        raise ValueError(f"Unexpected number for dimensions, {ndims}, while building output filename for field {field_name} and {input_filepath}")
-
-    # Field name is already known
-    d["field"] = field_name
-
-    # Frequency: use fx if no time dim
-    if 'time' not in ds[field_name].dims:
-        d["freq"] = "fx"
-    else:
-        # Attempt to parse from expected filenames
-        filename = input_filepath.name
-
-        # Define the expected ice filenames
-        # e.g. iceh-2hourly-mean_0272.nc, iceh-1yearly-mean_0272.nc
-        ice_regex = r"iceh-(?P<num>\d+)(?P<unit>yearly|monthly|daily|hourly)-"
-        ice_unit_mapping = {
-            "yearly": "yr",
-            "monthly": "mon",
-            "daily": "day",
-            "hourly": "hr"
-        }
-
-        if match:=re.match(ice_regex, filename):
-            # Extract the frequency number and units for ice files
-            d["freq"] = f"{match['num']}{ice_unit_mapping[match['unit']]}"
-        elif "_mon.nc" in filename:
-            # Match the monthly pattern for atmosphere files
-            d["freq"] = "1mon"
-        elif "_dai.nc" in filename:
-            # Match the daily pattern for atmosphere files
-            d["freq"] = "1day"
-        elif match:=re.match(r".+_(\d+hr).nc", filename):
-            # Get the frequency from the atmosphere regex match for Xhr
-            d["freq"] = match[1]
-        elif "aiihca.pc" in filename:
-            # Match another pattern for hourly atmosphere files
-            d["freq"] = "1hr"
-        else:
-            # No sub-hourly frequency data expected
-            raise ValueError(f"Unable to deduce frequency from filename while building output filename for {input_filepath}")
-
-    # Time cell_method: Should be able to deduce from the cell_method
-    cell_method_regx = r"time: (\w+)"
-    try:
-        if m:= re.search(cell_method_regx, ds[field_name].attrs["cell_methods"]):
-            # Since this element is optional add the . here
-            d["time_cell_method"] = "." + m[1]
-    except KeyError:
-        # If there are no cell_method omit this element
-        d["time_cell_method"] = ""
-
-    # Datestamp
-    if 'time' not in ds[field_name].dims:
-        # No datetime for fixed files
-        d["datestamp"] = ""
-    else:
-        # Truncate average time val by output file frequency
-        # datetimes do not correctly zero-pad so need to use %4Y
-        if re.match(r'\d+(yr|dec)', file_freq):
-            fmt = '%4Y'
-        elif re.match(r'\d+mon', file_freq):
-            fmt = '%4Y-%m'
-        elif re.match(r'\d+day', file_freq):
-            fmt = '%4Y-%m-%d'
-        else:
-            fmt = '%4Y-%m-%dT%H:%M:%S'
-
-        # Get the appropriately truncated datetime for the average time
-        try:
-            # Try the time bounds
-            time_arr = ds[ds['time'].attrs["bounds"]]
-            logging.debug("Using time bounds to calculate filename timestamp")
-        except KeyError:
-            # If there are no time bounds just use time
-            logging.debug("Unable to find time bounds, using time to calculate filename timestamp")
-            time_arr = ds['time']
-
-        # Calculate the middle point
-        first, last = time_arr.min(), time_arr.max()
-        datestamp_dt = (first + (last - first) / 2).dt
-        d['datestamp'] = "." + datestamp_dt.strftime(fmt).data.flatten()[0]
-
-    return template.format(**d)
 
 
 def process_file(
