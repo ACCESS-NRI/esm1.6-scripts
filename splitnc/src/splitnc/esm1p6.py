@@ -148,7 +148,7 @@ def build_esm1p6_filename(ds, field_name, input_filepath, esm1p6_filename=False,
         }
     except ValueError as e:
         # Reraise the exception with some extra information
-        e.add_note("While building output filename for field {field_name} and {input_filepath}")
+        e.args = (*e.args, f"While building output filename for field {field_name} and {input_filepath}")
         raise
 
     return template.format(**d)
