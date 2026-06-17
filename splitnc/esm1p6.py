@@ -70,16 +70,21 @@ def _build_frequency(ds, field_name, input_filepath):
 
 
 def _build_cell_method(ds, field_name):
-    # Time cell_method: Should be able to deduce from the cell_method
-    cell_method_regx = r"time: (\w+)"
+    attrs = ds[field_name].attrs
+
     try:
-        if 'time_rep' in ds[field_name].attrs and \
-            ds[field_name].attrs['time_rep'] == "instantaneous":
+        if attrs['time_rep'] == "instantaneous":
             # ice files sometimes have time_rep = instantaneous but not
             # cell_methods = time: point
             return ".snap"
+    except KeyError:
+        # Continue if 'time_rep' not in attrs
+        pass
 
-        if m:= re.search(cell_method_regx, ds[field_name].attrs["cell_methods"]):
+    # Time cell_method: Should be able to deduce from the cell_method
+    cell_method_regx = r"time: (\w+)"
+    try:    
+        if m:= re.search(cell_method_regx, attrs["cell_methods"]):
             method = m[1]
             if method == "point":
                 method = "snap"
@@ -87,8 +92,11 @@ def _build_cell_method(ds, field_name):
             # Since this element is optional add the . here
             return "." + method
     except KeyError:
-        # If there are no cell_method omit this element
-        return ""
+        # Continue if 'cell_methods' not in attrs
+        pass
+
+    # Otherwise omit this element from the filename
+    return ""
 
 
 def _build_datestamp(ds, field_name, file_freq):
