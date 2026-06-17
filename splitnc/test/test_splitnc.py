@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 import pytest
 import re
@@ -236,6 +237,8 @@ def test_splitnc(tmp_path, cdl_file, cmd_options, rename_regex, excluded_vars,
 
     assert len(output_files) == num_nc_files
 
+    os.remove(ncfile)
+
 
 @pytest.mark.parametrize(
     "cdl_file,field_regex",
@@ -285,6 +288,8 @@ def test_determine_field_vars(tmp_path, cdl_file, field_regex):
 
         # Check all the discovered fields match the regex
         assert all([re.match(field_regex, v) for v in field_list])
+
+    os.remove(ncfile)
 
 
 @pytest.mark.parametrize("use_esm1p6", [True, False])
@@ -454,3 +459,5 @@ def test_build_filenames(tmp_path, use_esm1p6, cdl_file, field, output_freq, exp
             expected_filename = f"{field}_{Path(cdl_file.replace('.cdl', '.nc'))}"
 
         assert actual_filename == expected_filename
+
+        os.remove(ncfile)
