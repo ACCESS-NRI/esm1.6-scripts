@@ -158,13 +158,13 @@ def test_splitnc(tmp_path, cdl_file, cmd_options, rename_regex, excluded_vars,
         with open(cmdline_file_path, 'w') as f:
             f.write(cmd_options)
 
-        cmd = f"python splitnc.py --command-line-file {cmdline_file_path}"
+        cmd = f"splitnc --command-line-file {cmdline_file_path}"
     else:
         # Need to mess about with quotes around the regex
         rename_regex = f"'{rename_regex}'"
         cmd_options = cmd_options.format(rename_regex=rename_regex)
 
-        cmd = f"python splitnc.py {cmd_options}"
+        cmd = f"splitnc {cmd_options}"
 
     # Attempt to split the file
     runcmd(cmd)

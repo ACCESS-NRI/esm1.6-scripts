@@ -10,7 +10,7 @@ import sys
 
 import xarray as xr
 
-from esm1p6 import build_esm1p6_filename
+from splitnc.esm1p6 import build_esm1p6_filename
 
 
 def determine_field_vars(ds):
