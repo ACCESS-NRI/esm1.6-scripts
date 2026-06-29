@@ -68,7 +68,6 @@ def _build_frequency(ds, field_name, input_filepath):
     raise ValueError("Unable to deduce frequency from filename")
 
 
-
 def _build_cell_method(ds, field_name):
     attrs = ds[field_name].attrs
 
@@ -94,6 +93,11 @@ def _build_cell_method(ds, field_name):
     except KeyError:
         # Continue if 'cell_methods' not in attrs
         pass
+
+    # If there's time but no time_bnds and no time cell_method then assume snap
+    # This case is intended to catch instantaneous atmospheric fields from um2nc
+    if "time" in ds and "bounds" not in ds["time"].attrs:
+        return ".snap"
 
     # Otherwise omit this element from the filename
     return ""
