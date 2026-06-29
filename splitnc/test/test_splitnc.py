@@ -420,7 +420,7 @@ def test_determine_field_vars(tmp_path, cdl_file, field_regex):
             "aiihca.pi-010101_3hr.cdl",
             "fld_s00i409",
             "1yr",
-            "access-esm1p6.um7p3.2d.fld_s00i409.3hr.0101.nc",
+            "access-esm1p6.um7p3.2d.fld_s00i409.3hr.snap.0101.nc",
         ),
         (
             # Test a 6-hourly 2d atmos field
