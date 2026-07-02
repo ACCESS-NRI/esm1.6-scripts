@@ -55,11 +55,21 @@ def prepare_mapping(nVeg, ConfigFile):
     with open(ConfigFile, 'r') as conf:
         MappingConf = yaml.safe_load(conf)
 
-    # At the moment, the only thing that requires defaults is the input to
-    # output vegetation mapping. By default, it maps in a 1-to-1 manner, i.e.
+    # By default, the vegetation maps in a 1-to-1 manner, i.e.
     # vegetation type 1 in the old vegetation map maps to vegetation type 1 in
     # the new vegetation map.
     VegetationMapping = {i: [i] for i in range(nVeg)}
+
+    # It may be that the user removes either per_tile or per_cell entries in
+    # the config- apply default values (empty list) that are iterable in that
+    # case. Also, ensure that it's a list instance
+    MappingConf['per_cell'] = MappingConf.get('per_cell', [])
+    if not isinstance(MappingConf['per_cell'], list):
+        MappingConf['per_cell'] = [MappingConf['per_cell']]
+
+    MappingConf['per_tile'] = MappingConf.get('per_tile', [])
+    if not isinstance(MappingConf['per_tile'], list):
+        MappingConf['per_tile'] = [MappingConf['per_tile']]
 
     # Apply the supplied mappings
     if 'vegetation_map' in MappingConf:
