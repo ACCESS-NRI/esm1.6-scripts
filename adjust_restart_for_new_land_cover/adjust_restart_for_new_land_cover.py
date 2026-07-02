@@ -63,11 +63,11 @@ def prepare_mapping(nVeg, ConfigFile):
     # It may be that the user removes either per_tile or per_cell entries in
     # the config- apply default values (empty list) that are iterable in that
     # case. Also, ensure that it's a list instance
-    MappingConf['per_cell'] = MappingConf.get('per_cell', [])
+    MappingConf['per_cell'] = MappingConf.get('per_cell') or []
     if not isinstance(MappingConf['per_cell'], list):
         MappingConf['per_cell'] = [MappingConf['per_cell']]
 
-    MappingConf['per_tile'] = MappingConf.get('per_tile', [])
+    MappingConf['per_tile'] = MappingConf.get('per_tile') or []
     if not isinstance(MappingConf['per_tile'], list):
         MappingConf['per_tile'] = [MappingConf['per_tile']]
 
