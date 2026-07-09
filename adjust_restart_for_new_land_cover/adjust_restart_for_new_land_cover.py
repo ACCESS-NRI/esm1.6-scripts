@@ -203,7 +203,6 @@ def remap_vegetation(
         InputDataset,
         InputVegetation,
         OutputVegetation,
-        PreviousVegetation,
         FillAll,
         Config
         ):
@@ -230,11 +229,6 @@ def remap_vegetation(
     # Add the land fractions- also include previous year as same for LUC
     OutDataset['FRACTIONS OF SURFACE TYPES'] = (('veg', 'lat', 'lon'),
                                                OutputVegetation)
-
-    # Assume the previous year surface fractions are just the same as current,
-    # unless otherwise specified
-    OutDataset['PREVIOUS YEAR SURF FRACTIONS (TILES)'] = \
-        (('veg', 'lat', 'lon'), PreviousVegetation)
 
     # We need to know which tiles to fill, and which to empty. This depends on
     # what mode we're in: if --fill-all is passed, then we fill all empty relevant
@@ -390,18 +384,29 @@ if __name__ == '__main__':
     # Allow the file to contain a time series (as might be prepared for a LUC
     # dataset) or a snapshot.
     NewVegetation = Vegetation['fraction'][args.time_index, :, :, :].to_numpy()
-    if args.time_index > 0:
-        PrevVegetation = Vegetation['fraction'][args.time_index-1, :, :, :].to_numpy()
-    else:
-        PrevVegetation = Vegetation['fraction'][args.time_index, :, :, :].to_numpy()
 
     OutDataset = remap_vegetation(
             OrigDataset,
             OrigVegetation,
             NewVegetation,
-            PrevVegetation,
             args.fill_all,
             args.config
             )
 
+    # Decide what to do about the previous year's fractions in the restart. It
+    # can either come from what is already in the restart, or from the previous
+    # year in the land use change dataset (or a copy of the first year's 
+    # fractions, if the first index is requested).
+    # If the user wants to take previous fractions from the restart, don't need
+    # to do anything.
+    if not args.use_previous_fractions_from_restart:
+        if ars.time_index == 0:
+            prev_index = 0
+        else:
+            prev_index = args.time_index - 1
+
+        PrevVegetation = Vegetation['fraction'][prev_index, :, :, :].to_numpy()
+        OutDataset["PREVIOUS YEAR SURF FRACTIONS (TILES)"] = \
+                (('veg', 'lat', 'lon'), PrevVegetation)
+        
     OutDataset.to_netcdf(args.output)
