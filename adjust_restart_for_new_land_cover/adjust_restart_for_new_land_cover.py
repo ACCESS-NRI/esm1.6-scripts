@@ -35,6 +35,12 @@ def _parse_args():
             help="Index in vegetations fractions to use as current year"
             )
     parser.add_argument(
+            "--use-previous-fractions-from-restart",
+            default=False,
+            action="store_true",
+            help="Choose to take the previous fractions from the input restart."
+            )
+    parser.add_argument(
             "--fill-all",
             default=False,
             action="store_true",

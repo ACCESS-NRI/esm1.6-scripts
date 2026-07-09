@@ -30,6 +30,7 @@ Takes a subset of the fields from the UM restart and converts them to NetCDF. Th
 * ```-o/--output```: Name to write the generated NetCDF file to.
 * ```-m/--vegetation_map```: NetCDF containing the new vegetation distribution. The vegetation distribution is expected to be in the ```"fraction"``` variable, and have dimensions of ```(time, veg, lat, lon)```.
 * ```-t/--time-index```: Which time index in the provided vegetation map to use. Defaults to 0. If a value greater than 0 is supplied, the previous year fractions will be placed in the associated restart field for previous year fractions (for the purpose of land use change).
+* ```--use-previous-fractions-from-restart```: If specified, the previous year surface fractions field in the restart is taken from the input restart. Otherwise, it is taken from the previous time slice of the vegetation dataset (or index 0 if ```--time-index=0```).
 * ```--fill-all```: If specified, all the land tiles are filled with physically meaningful values, as opposed to only the active tiles.
 * ```-c/--config```: Configuration file describing the remapping process.
 
