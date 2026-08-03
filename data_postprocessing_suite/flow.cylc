@@ -1,0 +1,177 @@
+#!jinja2
+
+# TODO:
+# - test workflow with echo'd scripts
+# - actually implement scripts
+# - implement ocean glob script
+# - implement ocean rename script (or do it during globbing?)
+# - addmeta fname regex may need optional components (e.g. no date for fx files)
+# - addmeta dataspec.yaml needs additional fields added
+# - consider if it's worth it to cycle on datasets intead of output dirs
+
+# Get a list of output dirs
+{% from "glob" import glob %}
+{% set outputdirs =  glob(DATASET_DIR ~ "/output???") | sort %}
+
+[meta]
+    title = ESM1.6 Data Postprocessing
+
+[scheduling]
+    cycling mode = integer
+    initial cycle point = 0
+    # Set the final cycle point to number of the last output??? dir
+    final cycle point = {{ outputdirs[-1][-3:] | int }}
+
+    runahead limit = P{{ RUNAHEAD_LIMIT }}
+
+    [[queues]]
+        [[[PBS_QUEUE]]]
+            limit = {{ PBS_LIMIT }}
+            members = PBS
+
+    [[graph]]
+        P1 = """
+            splitnc_atmosphere => addmeta_atmosphere
+            splitnc_ice => addmeta_ice
+            addmeta_realm_ocean => glob_ocean => rename_ocean => addmeta_ocean
+
+            PROCESS:succeed-all => finish_cycle
+        """
+
+[runtime]
+    [[LOCAL_JOB]]
+        execution retry delays = PT10S, 2*PT2M
+        submission retry delays = PT10S, 2*PT2M
+        execution time limit = PT5M
+
+    [[PBS]]
+        inherit = root
+        platform = pbs
+        execution retry delays = PT10S, 2*PT2M
+        submission retry delays = PT10S, 2*PT2M
+
+        # Need to load modules with addmeta & splitnc
+        init-script = """
+            module purge
+            module use /g/data/vk83/modules
+            module load payu
+
+            # splitnc hasn't been added to payu module yet
+            # I've installed it in this venv
+            source /home/548/jt4085/repos/splitnc/.venv/bin/activate
+        """
+
+        [[[directives]]]
+            -P = {{ PROJECT }}
+            -q = {{ QUEUE }}
+            -l storage = {{ STORAGE }}
+            -l jobfs = 128GB
+
+    [[SMALL_JOB]]
+        inherit = PBS
+        execution time limit = PT20M
+
+        [[[directives]]]
+            -l ncpus = 2
+            -l mem = 8GB
+
+    [[LARGE_JOB]]
+        inherit = PBS
+        execution time limit = PT2H
+
+        [[[directives]]]
+            -l ncpus = 28
+            -l mem = 128GB
+
+    [[PROCESS]]
+        [[[environment]]]
+            OUTPUT_DIR = "{{ DATASET_DIR }}/output$(printf '%03d' $CYLC_TASK_CYCLE_POINT)"
+
+    [[finish_cycle]]
+        inherit = LOCAL_JOB
+        script = echo "do finishing tasks here"
+
+{% for realm in REALMS %}
+    # Define a family for each realm
+    [[{{ realm | upper }}]]
+        inherit = PROCESS
+        [[[environment]]]
+            REALM = "{{ realm }}"
+            REALM_DIR = "$OUTPUT_DIR/$REALM"
+            REALM_POSTPROCESSED_DIR = "$REALM_DIR/postprocessed"
+
+    [[addmeta_{{ realm }}]]
+        inherit = {{ realm | upper }}, LOCAL_JOB #SMALL_JOB
+        script = """
+            echo "process {{ realm }} with addmeta"
+            # TODO: realm?
+            # TODO: move yamls into suite
+
+            echo "addmeta command:"
+            echo "addmeta \
+                -v -s \
+                -d $OUTPUT_DIR/../metadata.yaml \
+                -d $OUTPUT_DIR/env.yaml \
+                -m $CYLC_WORKFLOW_RUN_DIR/conf/dataspec.yaml \
+                -m $CYLC_WORKFLOW_RUN_DIR/conf/{{ realm }}.yaml \
+                --fnregex='access-esm1p6\..+\.\dd\.(?P<var>\w+)\.(?P<freq>\w{3,4})(\.\w+){0,1}\.\d{4}\.nc' \
+                $REALM_POSTPROCESSED_DIR/*.nc"
+        """
+{% endfor %}
+
+    #### ATMOSPHERE
+    [[splitnc_atmosphere]]
+        inherit = ATMOSPHERE, LOCAL_JOB #LARGE_JOB
+        script = """
+            echo -e "process atmos with splitnc\nrealm dir: $REALM_DIR"
+
+            echo "splitnc command:"
+            echo "splitnc \
+                --shared-vars latitude_longitude \
+                --rename-regex '(?P<newname>.+)_\d+' \
+                --output-dir "$REALM_POSTPROCESSED_DIR" \
+                --input-group-regex 'aiihca\.p[aceij]-\d{4}(?P<wild>\d{2})(_mon|_dai|_3hr|_6hr){0,1}\.nc' \
+                --use-esm1p6-filenames \
+                --verbose \
+                $REALM_DIR/netCDF/*.nc"
+        """
+
+    #### ICE
+    [[splitnc_ice]]
+        inherit = ICE, LOCAL_JOB #LARGE_JOB
+        script = """
+            echo "process ice with splitnc"
+            echo "splitnc command:"
+            echo "splitnc \
+                --shared-vars uarea,tmask,tarea \
+                --excluded-vars VGRD. \
+                --output-dir "$REALM_POSTPROCESSED_DIR" \
+                --input-group-regex 'iceh-1(daily|monthly)-mean_\d{4}-(?P<wild>\d{2})\.nc' \
+                --use-esm1p6-filenames \
+                --verbose \
+                $REALM_DIR/*.nc"
+        """
+
+    #### OCEAN
+    [[addmeta_realm_ocean]]
+        inherit = OCEAN, LOCAL_JOB, #SMALL_JOB
+        # Use add meta to add the realm to the attributes before it's removed
+        # from the filename by renaming
+        # NOTE: This does modify the original "raw" .nc file
+        script = """
+            echo "process $REALM with addmeta - just realm attr"
+            echo "addmeta command:"
+            echo "addmeta \
+                -v -s \
+                -m $CYLC_WORKFLOW_RUN_DIR/conf/realm_only.yaml \
+                --fnregex=='(?P<realm>(ocean|oceanbgc))-(scalar|\dd-(?P<var>(.*)))-(?P<freq>\d[a-z]{2,3})-(.*-)?ym_\d{4}_\d{2}\.nc'
+                $REALM_POSTPROCESSED_DIR/*.nc"
+        """
+
+    [[glob_ocean]]
+        inherit = OCEAN, LOCAL_JOB #LARGE_JOB
+        script = echo "Glob ocean files into yearly files"
+
+    [[rename_ocean]]
+        inherit = OCEAN, LOCAL_JOB #SMALL_JOB
+        script = echo "rename ocean files"

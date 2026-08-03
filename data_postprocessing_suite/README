@@ -1,0 +1,7 @@
+# ESM1.6 Output Postprocessing Cylc Suite
+
+This suite is intended to be used to post-process data output from ESM1.6 that
+was created before the changes to follow the ACCESS Ouutput Data Specifications
+were integrated with the ESM1.6 workflows.
+
+UNDER CONSTRUCTION
