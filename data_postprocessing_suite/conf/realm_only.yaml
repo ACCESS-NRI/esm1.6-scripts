@@ -1,3 +1,2 @@
 global:
-#  realm: "{{ 'ocnBgchem' if __file__.realm == 'oceanbgc' else __file__.realm }}"
   realm: "{{ __argdata__.realm }}"

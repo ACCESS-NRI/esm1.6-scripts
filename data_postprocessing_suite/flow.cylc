@@ -1,7 +1,7 @@
 #!jinja2
 
 # TODO:
-# - build intake dataset?
+# - Finish script to iterate over datasets and start/resume suites
 
 # Get a list of output dirs
 {% from "glob" import glob %}
@@ -93,8 +93,8 @@
         script = echo "End of processing for output$CYLC_TASK_CYCLE_POINT"
 
     [[finish_dataset]]
-        inherit = SMALL_JOB
-        script = echo "build intake datastore here"
+        inherit = LOCAL_JOB
+        script = echo "End of processing for {{ DATASET_DIR }}"
 
     #### SHARED
 {% for realm in REALMS %}
@@ -122,8 +122,6 @@
         """
 
     [[validatemeta_{{ realm }}]]
-        # Validate needs internet to fetch schema hence copyq
-        # FIXME: grab the schema and dump it to a shared file
         inherit = {{ realm | upper }}, SMALL_JOB
 
         script = """
@@ -151,7 +149,6 @@
     [[finish_{{ realm }}]]
         # Dummy task to tidy up graph
         inherit = {{ realm | upper }}, FINISH_REALM
-
 {% endfor %}
 
     #### ATMOSPHERE
