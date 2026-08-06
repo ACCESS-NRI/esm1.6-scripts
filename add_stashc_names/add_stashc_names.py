@@ -70,7 +70,7 @@ if __name__ == "__main__":
 
     for i, line in enumerate(lines):
         if is_stash_request(line):
-            lines[i] = add_name(line)
+            lines[i] = add_name(line, stashmaster)
 
     with open(args.output, "w") as STASHC_output:
         STASHC_output.writelines(lines)
