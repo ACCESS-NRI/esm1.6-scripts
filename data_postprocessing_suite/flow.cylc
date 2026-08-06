@@ -1,13 +1,7 @@
 #!jinja2
 
 # TODO:
-# - test workflow with echo'd scripts
-# - actually implement scripts
-# - implement ocean glob script
-# - implement ocean rename script (or do it during globbing?)
-# - addmeta fname regex may need optional components (e.g. no date for fx files)
-# - addmeta dataspec.yaml needs additional fields added
-# - consider if it's worth it to cycle on datasets intead of output dirs
+# - build intake dataset?
 
 # Get a list of output dirs
 {% from "glob" import glob %}
@@ -30,67 +24,79 @@
             members = PBS
 
     [[graph]]
-        P1 = """
-            splitnc_atmosphere => addmeta_atmosphere
-            splitnc_ice => addmeta_ice
-            addmeta_realm_ocean => glob_ocean => rename_ocean => addmeta_ocean
+        # Initial cycle point
+        R1 = """
+            install => fetch_schema
+        """
 
-            PROCESS:succeed-all => finish_cycle
+        # Every cycle
+        P1 = """
+            install[^] => splitnc_atmosphere => addmeta_atmosphere
+
+            install[^] => splitnc_ice => addmeta_ice
+
+            install[^] => copy_files_ocean
+                => addmeta_realm_ocean
+                => rename_ocean
+                => addmeta_ocean
+
+{% for realm in REALMS %}
+            fetch_schema[^] & addmeta_{{ realm }}:succeeded
+                => validatemeta_{{ realm }}
+                => publish_{{ realm }}
+    {% if DELETE_OLD_DATA %}
+                => delete_old_{{ realm }}
+    {% endif %}
+                => finish_{{ realm }}
+{% endfor %}
+
+            FINISH_REALM:succeed-all => finish_cycle
+        """
+
+        # Final cycle point
+        R1/$ = """
+            finish_cycle:succeeded => finish_dataset
         """
 
 [runtime]
-    [[LOCAL_JOB]]
-        execution retry delays = PT10S, 2*PT2M
-        submission retry delays = PT10S, 2*PT2M
-        execution time limit = PT5M
-
-    [[PBS]]
-        inherit = root
-        platform = pbs
-        execution retry delays = PT10S, 2*PT2M
-        submission retry delays = PT10S, 2*PT2M
-
-        # Need to load modules with addmeta & splitnc
-        init-script = """
-            module purge
-            module use /g/data/vk83/modules
-            module load payu
-
-            # splitnc hasn't been added to payu module yet
-            # I've installed it in this venv
-            source /home/548/jt4085/repos/splitnc/.venv/bin/activate
-        """
-
-        [[[directives]]]
-            -P = {{ PROJECT }}
-            -q = {{ QUEUE }}
-            -l storage = {{ STORAGE }}
-            -l jobfs = 128GB
-
-    [[SMALL_JOB]]
-        inherit = PBS
-        execution time limit = PT20M
-
-        [[[directives]]]
-            -l ncpus = 2
-            -l mem = 8GB
-
-    [[LARGE_JOB]]
-        inherit = PBS
-        execution time limit = PT2H
-
-        [[[directives]]]
-            -l ncpus = 28
-            -l mem = 128GB
+    {% include 'conf/job_directives.conf' %}
 
     [[PROCESS]]
         [[[environment]]]
             OUTPUT_DIR = "{{ DATASET_DIR }}/output$(printf '%03d' $CYLC_TASK_CYCLE_POINT)"
 
+    [[FINISH_REALM]]
+        # DUMMY family to tidy up graph
+
+    [[install]]
+        inherit = root
+
+        script = """
+            # analysis3 already has dask etc. installed
+            module use /g/data/xp65/public/modules/
+            module load conda/analysis3
+
+            # Create a new venv
+            python -m venv $CYLC_WORKFLOW_SHARE_DIR/venv
+            source $CYLC_WORKFLOW_SHARE_DIR/venv/bin/activate
+
+            # Install the needed packages
+            python -m pip install json_ref_dict addmeta splitnc
+        """
+
+    [[fetch_schema]]
+        inherit = SMALL_COPYQ_JOB
+        script = python ${CYLC_WORKFLOW_RUN_DIR}/bin/grab_schema.py $CYLC_WORKFLOW_SHARE_DIR/ACCESS-schema.json
+
     [[finish_cycle]]
         inherit = LOCAL_JOB
-        script = echo "do finishing tasks here"
+        script = echo "End of processing for output$CYLC_TASK_CYCLE_POINT"
 
+    [[finish_dataset]]
+        inherit = SMALL_JOB
+        script = echo "build intake datastore here"
+
+    #### SHARED
 {% for realm in REALMS %}
     # Define a family for each realm
     [[{{ realm | upper }}]]
@@ -98,80 +104,117 @@
         [[[environment]]]
             REALM = "{{ realm }}"
             REALM_DIR = "$OUTPUT_DIR/$REALM"
+            REALM_INPUT_DIR = "$REALM_DIR"
             REALM_POSTPROCESSED_DIR = "$REALM_DIR/postprocessed"
+            REALM_ARCHIVE_DIR = "$REALM_DIR/old_data_archive"
 
     [[addmeta_{{ realm }}]]
-        inherit = {{ realm | upper }}, LOCAL_JOB #SMALL_JOB
+        inherit = {{ realm | upper }}, SMALL_JOB
         script = """
-            echo "process {{ realm }} with addmeta"
-            # TODO: realm?
-            # TODO: move yamls into suite
-
-            echo "addmeta command:"
-            echo "addmeta \
+            addmeta \
                 -v -s \
                 -d $OUTPUT_DIR/../metadata.yaml \
                 -d $OUTPUT_DIR/env.yaml \
                 -m $CYLC_WORKFLOW_RUN_DIR/conf/dataspec.yaml \
                 -m $CYLC_WORKFLOW_RUN_DIR/conf/{{ realm }}.yaml \
-                --fnregex='access-esm1p6\..+\.\dd\.(?P<var>\w+)\.(?P<freq>\w{3,4})(\.\w+){0,1}\.\d{4}\.nc' \
-                $REALM_POSTPROCESSED_DIR/*.nc"
+                --fnregex='access-esm1p6\.\w+(?:\.\dd)?\.(?P<var>\w+)\.(?P<freq>\w{2,4})(?:\.\w+)?(?:\.\d{4})?\.nc' \
+                $REALM_POSTPROCESSED_DIR/*.nc
         """
+
+    [[validatemeta_{{ realm }}]]
+        # Validate needs internet to fetch schema hence copyq
+        # FIXME: grab the schema and dump it to a shared file
+        inherit = {{ realm | upper }}, SMALL_JOB
+
+        script = """
+            validatemeta \
+                -v \
+                -s $CYLC_WORKFLOW_SHARE_DIR/ACCESS-schema.json \
+                $REALM_POSTPROCESSED_DIR/*.nc
+        """
+
+    [[publish_{{ realm }}]]
+        inherit = {{ realm | upper }}, LOCAL_JOB
+
+        script = """
+            mkdir -vp $REALM_ARCHIVE_DIR
+            mv -v $REALM_INPUT_DIR/*.nc $REALM_ARCHIVE_DIR/
+            mv -v $REALM_POSTPROCESSED_DIR/*.nc $REALM_DIR/
+            rmdir -v $REALM_POSTPROCESSED_DIR
+        """
+
+    [[delete_old_{{ realm }}]]
+        inherit = {{ realm | upper }}, LOCAL_JOB
+
+        script = rm -rv "$REALM_ARCHIVE_DIR"
+
+    [[finish_{{ realm }}]]
+        # Dummy task to tidy up graph
+        inherit = {{ realm | upper }}, FINISH_REALM
+
 {% endfor %}
 
     #### ATMOSPHERE
-    [[splitnc_atmosphere]]
-        inherit = ATMOSPHERE, LOCAL_JOB #LARGE_JOB
-        script = """
-            echo -e "process atmos with splitnc\nrealm dir: $REALM_DIR"
+    [[ATMOSPHERE]]
+        # atmos has the orginal netCDFs in a different directory
+        [[[environment]]]
+            REALM_INPUT_DIR = "$REALM_DIR/netCDF"
 
-            echo "splitnc command:"
-            echo "splitnc \
+    [[splitnc_atmosphere]]
+        inherit = ATMOSPHERE, LARGE_JOB
+        script = """
+            splitnc \
                 --shared-vars latitude_longitude \
                 --rename-regex '(?P<newname>.+)_\d+' \
                 --output-dir "$REALM_POSTPROCESSED_DIR" \
                 --input-group-regex 'aiihca\.p[aceij]-\d{4}(?P<wild>\d{2})(_mon|_dai|_3hr|_6hr){0,1}\.nc' \
                 --use-esm1p6-filenames \
+                --skip-existing \
                 --verbose \
-                $REALM_DIR/netCDF/*.nc"
+                $REALM_INPUT_DIR/*.nc
         """
 
     #### ICE
     [[splitnc_ice]]
-        inherit = ICE, LOCAL_JOB #LARGE_JOB
+        inherit = ICE, LARGE_JOB
         script = """
-            echo "process ice with splitnc"
-            echo "splitnc command:"
-            echo "splitnc \
+            splitnc \
                 --shared-vars uarea,tmask,tarea \
                 --excluded-vars VGRD. \
                 --output-dir "$REALM_POSTPROCESSED_DIR" \
                 --input-group-regex 'iceh-1(daily|monthly)-mean_\d{4}-(?P<wild>\d{2})\.nc' \
                 --use-esm1p6-filenames \
+                --skip-existing \
                 --verbose \
-                $REALM_DIR/*.nc"
+                $REALM_INPUT_DIR/*.nc
         """
 
     #### OCEAN
-    [[addmeta_realm_ocean]]
-        inherit = OCEAN, LOCAL_JOB, #SMALL_JOB
-        # Use add meta to add the realm to the attributes before it's removed
-        # from the filename by renaming
-        # NOTE: This does modify the original "raw" .nc file
+    [[copy_files_ocean]]
+        inherit = OCEAN, SMALL_JOB
         script = """
-            echo "process $REALM with addmeta - just realm attr"
-            echo "addmeta command:"
-            echo "addmeta \
-                -v -s \
-                -m $CYLC_WORKFLOW_RUN_DIR/conf/realm_only.yaml \
-                --fnregex=='(?P<realm>(ocean|oceanbgc))-(scalar|\dd-(?P<var>(.*)))-(?P<freq>\d[a-z]{2,3})-(.*-)?ym_\d{4}_\d{2}\.nc'
-                $REALM_POSTPROCESSED_DIR/*.nc"
+            mkdir -p "$REALM_POSTPROCESSED_DIR"
+            cp $REALM_INPUT_DIR/*.nc "$REALM_POSTPROCESSED_DIR/"
         """
 
-    [[glob_ocean]]
-        inherit = OCEAN, LOCAL_JOB #LARGE_JOB
-        script = echo "Glob ocean files into yearly files"
+    [[addmeta_realm_ocean]]
+        inherit = OCEAN, SMALL_JOB
+        # Use add meta to add the realm to the attributes before it's removed
+        # from the filename by renaming
+        script = """
+            addmeta \
+                -v -s \
+                -m $CYLC_WORKFLOW_RUN_DIR/conf/realm_only.yaml \
+                --datavar realm='ocean' \
+                $REALM_POSTPROCESSED_DIR/ocean-*.nc
+
+            addmeta \
+                -v -s \
+                -m $CYLC_WORKFLOW_RUN_DIR/conf/realm_only.yaml \
+                --datavar freq='ocnBgchem' \
+                $REALM_POSTPROCESSED_DIR/oceanbgc-*.nc
+        """
 
     [[rename_ocean]]
-        inherit = OCEAN, LOCAL_JOB #SMALL_JOB
-        script = echo "rename ocean files"
+        inherit = OCEAN, LOCAL_JOB
+        script = python3 ${CYLC_WORKFLOW_RUN_DIR}/bin/rename_ocean.py $REALM_POSTPROCESSED_DIR/*.nc
