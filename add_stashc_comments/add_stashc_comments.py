@@ -7,8 +7,11 @@ from pathlib import Path
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        prog="add_stashc_names",
-        description="Add a comment with the variable long name next to each STASH request in a STASHC file."
+        prog="add_stashc_comments",
+        description=(
+            "Add a comments with the variable long name next to each STASH request in a STASHC file. "
+            "Add comments to the time, domain, and usage profile definitions indicating their number."
+        )
     )
 
     parser.add_argument("--STASHmaster",
