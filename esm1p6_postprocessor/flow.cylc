@@ -1,12 +1,18 @@
 #!jinja2
 
 # TODO:
-# - Handle 3 or 4 digit outputX
 # - Fix FIXMEs
 
-# Get a list of output dirs
+# Get the last outputX directory for this dataset
+# Typically the outputX number is 3 digits but for very long runs it can be 4
+# Need to extract the number, convert to int and get the largest value
 {% from "glob" import glob %}
-{% set outputdirs =  glob(DATASET_DIR ~ "/output???") | sort %}
+{% set output_dirs =  glob(DATASET_DIR ~ "/output*") | sort %}
+{% set output_ints = [] %}
+{% for output_dir in output_dirs %}
+    {% set output_int = output_dir.split("output")[-1] | int %}
+    {{ output_ints.append(output_int) }}
+{% endfor %}
 
 [meta]
     title = ESM1.6 Data Postprocessing
@@ -15,7 +21,7 @@
     cycling mode = integer
     initial cycle point = 0
     # Set the final cycle point to number of the last output??? dir
-    final cycle point = {{ outputdirs[-1][-3:] | int }}
+    final cycle point = {{ output_ints | max }}
 
     runahead limit = P{{ RUNAHEAD_LIMIT }}
 
@@ -66,6 +72,7 @@
         [[[environment]]]
             DATASET_DIR = "{{ DATASET_DIR }}"
             DATASET_NAME = "$(basename $DATASET_DIR)"
+            # Note '%03d' will still use more than 3 digits for large numbers
             OUTPUT_NUM = "$(printf '%03d' $CYLC_TASK_CYCLE_POINT)"
             INPUT_DIR = "{{ DATASET_DIR }}/output$OUTPUT_NUM"
             # OUTPUT_DIR refers the to directory where files are written by this
