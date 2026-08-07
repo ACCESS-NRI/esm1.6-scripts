@@ -6,12 +6,13 @@
 # Get the last outputX directory for this dataset
 # Typically the outputX number is 3 digits but for very long runs it can be 4
 # Need to extract the number, convert to int and get the largest value
+# Jinja, variables, loops, scope is a bit complicated hence namespace etc.
 {% from "glob" import glob %}
 {% set output_dirs =  glob(DATASET_DIR ~ "/output*") | sort %}
-{% set output_ints = [] %}
+{% set output_ints = namespace(vals=[]) %}
 {% for output_dir in output_dirs %}
     {% set output_int = output_dir.split("output")[-1] | int %}
-    {{ output_ints.append(output_int) }}
+    {% set output_ints.vals = output_ints.vals  + [output_int] %}
 {% endfor %}
 
 [meta]
@@ -21,7 +22,7 @@
     cycling mode = integer
     initial cycle point = 0
     # Set the final cycle point to number of the last output??? dir
-    final cycle point = {{ output_ints | max }}
+    final cycle point = {{ output_ints.vals | max }}
 
     runahead limit = P{{ RUNAHEAD_LIMIT }}
 
