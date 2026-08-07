@@ -29,6 +29,7 @@ def parse_args():
     return parser.parse_args()
 
 
+# Various regex patterns for matching lines in the STASHC file
 request_pattern = r"\s*&STREQ\s.*?/"
 imod_pattern = r"IMOD\s*=\s*\d+"
 isec_pattern = r"ISEC\s*=\s*(?P<section>\d+)"
@@ -61,6 +62,22 @@ def add_name(line, stashmaster):
     return request + f"\t! {stashmaster[stashcode].name}\n"
 
 
+def is_time_def(line):
+    return re.match(r"\s*&TIME\s", line)
+
+def is_domain_def(line):
+    return re.match(r"\s*&DOMAIN\s", line)
+
+def is_use_def(line):
+    return re.match(r"\s*&USE\s", line)
+
+def is_section_start(line):
+    return re.match(r"\s*&STASHNUM\s", line)
+
+def is_count_comment(line):
+    return re.match(r"! (Time|Domain|Usage) profile number", line)
+
+
 if __name__ == "__main__":
     args = parse_args()
     stashmaster = mule.STASHmaster.from_file(args.STASHmaster)
@@ -68,9 +85,33 @@ if __name__ == "__main__":
     with open(args.input, "r") as STASHC_input:
         lines = STASHC_input.readlines()
 
-    for i, line in enumerate(lines):
+    lines_to_write = []
+    time_count = 0
+    domain_count = 0
+    use_count = 0
+
+    for line in lines:
+        if is_count_comment(line):
+            # Skip existing count comments to avoid duplication
+            continue
         if is_stash_request(line):
-            lines[i] = add_name(line, stashmaster)
+            line = add_name(line, stashmaster)
+        elif is_time_def(line):
+            time_count += 1
+            lines_to_write.append(f"! Time profile number {time_count}\n")
+        elif is_domain_def(line):
+            domain_count += 1
+            lines_to_write.append(f"! Domain profile number {domain_count}\n")
+        elif is_use_def(line):
+            use_count += 1
+            lines_to_write.append(f"! Usage profile number {use_count}\n")
+        elif is_section_start(line):
+            # Reset the time, domain, and profile counts for new sections of the file
+            time_count = 0
+            domain_count = 0
+            use_count = 0
+
+        lines_to_write.append(line)
 
     with open(args.output, "w") as STASHC_output:
-        STASHC_output.writelines(lines)
+        STASHC_output.writelines(lines_to_write)
