@@ -213,7 +213,11 @@
         inherit = OCEAN, SMALL_JOB
         script = """
             mkdir -p "$REALM_POSTPROCESSED_DIR"
-            cp $REALM_NETCDF_DIR/*.nc "$REALM_POSTPROCESSED_DIR/"
+            # Need to match permissions at the destination, not source
+            # e.g. no write permission on original files
+            rsync --archive --partial --verbose \
+                --chmod=ugo=rwX \
+                $REALM_NETCDF_DIR/*.nc "$REALM_POSTPROCESSED_DIR/"
         """
 
     [[addmeta_realm_ocean]]
