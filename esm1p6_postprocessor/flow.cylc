@@ -1,7 +1,8 @@
 #!jinja2
 
 # TODO:
-# - Finish script to iterate over datasets and start/resume suites
+# - Handle 3 or 4 digit outputX
+# - Fix FIXMEs
 
 # Get a list of output dirs
 {% from "glob" import glob %}
@@ -44,7 +45,7 @@
             fetch_schema[^] & addmeta_{{ realm }}:succeeded
                 => validatemeta_{{ realm }}
                 => publish_{{ realm }}
-    {% if DELETE_OLD_DATA %}
+    {% if DELETE_OLD_DATA and not SCRATCH_MODE %}
                 => delete_old_{{ realm }}
     {% endif %}
                 => finish_{{ realm }}
@@ -63,7 +64,17 @@
 
     [[PROCESS]]
         [[[environment]]]
-            OUTPUT_DIR = "{{ DATASET_DIR }}/output$(printf '%03d' $CYLC_TASK_CYCLE_POINT)"
+            DATASET_DIR = "{{ DATASET_DIR }}"
+            DATASET_NAME = "$(basename $DATASET_DIR)"
+            OUTPUT_NUM = "$(printf '%03d' $CYLC_TASK_CYCLE_POINT)"
+            INPUT_DIR = "{{ DATASET_DIR }}/output$OUTPUT_NUM"
+            # OUTPUT_DIR refers the to directory where files are written by this
+            # suite not dataset/outputX
+{% if SCRATCH_MODE %}
+            OUTPUT_DIR = "{{ SCRATCH_DIR }}/$DATASET_NAME/output$OUTPUT_NUM"
+{% else %}
+            OUTPUT_DIR = "$INPUT_DIR"
+{% endif %}
 
     [[FINISH_REALM]]
         # DUMMY family to tidy up graph
@@ -89,7 +100,7 @@
         script = python ${CYLC_WORKFLOW_RUN_DIR}/bin/grab_schema.py $CYLC_WORKFLOW_SHARE_DIR/ACCESS-schema.json
 
     [[finish_cycle]]
-        inherit = LOCAL_JOB
+        inherit = PROCESS, LOCAL_JOB
         script = echo "End of processing for output$CYLC_TASK_CYCLE_POINT"
 
     [[finish_dataset]]
@@ -103,18 +114,19 @@
         inherit = PROCESS
         [[[environment]]]
             REALM = "{{ realm }}"
-            REALM_DIR = "$OUTPUT_DIR/$REALM"
-            REALM_INPUT_DIR = "$REALM_DIR"
-            REALM_POSTPROCESSED_DIR = "$REALM_DIR/postprocessed"
-            REALM_ARCHIVE_DIR = "$REALM_DIR/old_data_archive"
+            REALM_INPUT_DIR = "$INPUT_DIR/$REALM"
+            REALM_OUTPUT_DIR = "$OUTPUT_DIR/$REALM"
+            REALM_NETCDF_DIR = "$REALM_INPUT_DIR"
+            REALM_POSTPROCESSED_DIR = "$REALM_OUTPUT_DIR/postprocessed"
+            REALM_ARCHIVE_DIR = "$REALM_INPUT_DIR/old_data_archive"
 
     [[addmeta_{{ realm }}]]
         inherit = {{ realm | upper }}, SMALL_JOB
         script = """
             addmeta \
                 -v -s \
-                -d $OUTPUT_DIR/../metadata.yaml \
-                -d $OUTPUT_DIR/env.yaml \
+                -d $INPUT_DIR/../metadata.yaml \
+                -d $INPUT_DIR/env.yaml \
                 -m $CYLC_WORKFLOW_RUN_DIR/conf/dataspec.yaml \
                 -m $CYLC_WORKFLOW_RUN_DIR/conf/{{ realm }}.yaml \
                 --fnregex='access-esm1p6\.\w+(?:\.\dd)?\.(?P<var>\w+)\.(?P<freq>\w{2,4})(?:\.\w+)?(?:\.\d{4})?\.nc' \
@@ -135,9 +147,11 @@
         inherit = {{ realm | upper }}, LOCAL_JOB
 
         script = """
+    {% if not SCRATCH_MODE %}
             mkdir -vp $REALM_ARCHIVE_DIR
-            mv -v $REALM_INPUT_DIR/*.nc $REALM_ARCHIVE_DIR/
-            mv -v $REALM_POSTPROCESSED_DIR/*.nc $REALM_DIR/
+            mv -v $REALM_NETCDF_DIR/*.nc $REALM_ARCHIVE_DIR/
+    {% endif %}
+            mv -v $REALM_POSTPROCESSED_DIR/*.nc $REALM_OUTPUT_DIR/
             rmdir -v $REALM_POSTPROCESSED_DIR
         """
 
@@ -155,7 +169,7 @@
     [[ATMOSPHERE]]
         # atmos has the orginal netCDFs in a different directory
         [[[environment]]]
-            REALM_INPUT_DIR = "$REALM_DIR/netCDF"
+            REALM_NETCDF_DIR = "$REALM_INPUT_DIR/netCDF"
 
     [[splitnc_atmosphere]]
         inherit = ATMOSPHERE, LARGE_JOB
@@ -168,7 +182,7 @@
                 --use-esm1p6-filenames \
                 --skip-existing \
                 --verbose \
-                $REALM_INPUT_DIR/*.nc
+                $REALM_NETCDF_DIR/*.nc
         """
 
     #### ICE
@@ -183,7 +197,7 @@
                 --use-esm1p6-filenames \
                 --skip-existing \
                 --verbose \
-                $REALM_INPUT_DIR/*.nc
+                $REALM_NETCDF_DIR/*.nc
         """
 
     #### OCEAN
@@ -191,7 +205,7 @@
         inherit = OCEAN, SMALL_JOB
         script = """
             mkdir -p "$REALM_POSTPROCESSED_DIR"
-            cp $REALM_INPUT_DIR/*.nc "$REALM_POSTPROCESSED_DIR/"
+            cp $REALM_NETCDF_DIR/*.nc "$REALM_POSTPROCESSED_DIR/"
         """
 
     [[addmeta_realm_ocean]]
