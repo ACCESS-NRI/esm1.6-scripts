@@ -195,7 +195,7 @@
 
     #### ICE
     [[splitnc_ice]]
-        inherit = ICE, LARGE_JOB
+        inherit = ICE, MEDIUM_JOB
         script = """
             splitnc \
                 --shared-vars uarea,tmask,tarea \
