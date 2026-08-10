@@ -132,7 +132,7 @@
         inherit = {{ realm | upper }}, SMALL_JOB
         script = """
             addmeta \
-                -v -s \
+                -v -s --update-history \
                 -d $INPUT_DIR/../metadata.yaml \
                 -d $INPUT_DIR/env.yaml \
                 -m $CYLC_WORKFLOW_RUN_DIR/conf/dataspec.yaml \
@@ -226,13 +226,13 @@
         # from the filename by renaming
         script = """
             addmeta \
-                -v -s \
+                -v -s --update-history \
                 -m $CYLC_WORKFLOW_RUN_DIR/conf/realm_only.yaml \
                 --datavar realm='ocean' \
                 $REALM_POSTPROCESSED_DIR/ocean-*.nc
 
             addmeta \
-                -v -s \
+                -v -s --update-history \
                 -m $CYLC_WORKFLOW_RUN_DIR/conf/realm_only.yaml \
                 --datavar freq='ocnBgchem' \
                 $REALM_POSTPROCESSED_DIR/oceanbgc-*.nc
