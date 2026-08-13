@@ -34,22 +34,22 @@
     [[graph]]
         # Initial cycle point
         R1 = """
-            install => fetch_schema
+            build_venv => fetch_schema & derive_dataset_metadata => finish_install
         """
 
         # Every cycle
         P1 = """
-            install[^] => splitnc_atmosphere => addmeta_atmosphere
+            finish_install[^] => splitnc_atmosphere => addmeta_atmosphere
 
-            install[^] => splitnc_ice => addmeta_ice
+            finish_install[^] => splitnc_ice => addmeta_ice
 
-            install[^] => copy_files_ocean
+            finish_install[^] => copy_files_ocean
                 => addmeta_realm_ocean
                 => rename_ocean
                 => addmeta_ocean
 
 {% for realm in REALMS %}
-            fetch_schema[^] & addmeta_{{ realm }}:succeeded
+            addmeta_{{ realm }}:succeeded
                 => validatemeta_{{ realm }} & verifydata_{{ realm }}
                 => publish_{{ realm }}
     {% if DELETE_OLD_DATA and not SCRATCH_MODE %}
@@ -87,8 +87,10 @@
     [[FINISH_REALM]]
         # DUMMY family to tidy up graph
 
-    [[install]]
-        inherit = root
+    [[INSTALL]]
+
+    [[build_venv]]
+        inherit = INSTALL
 
         script = """
             # analysis3 already has dask etc. installed
@@ -104,8 +106,21 @@
         """
 
     [[fetch_schema]]
-        inherit = SMALL_COPYQ_JOB
+        inherit = INSTALL, SMALL_COPYQ_JOB
         script = python ${CYLC_WORKFLOW_RUN_DIR}/bin/grab_schema.py $CYLC_WORKFLOW_SHARE_DIR/ACCESS-schema.json
+
+    [[derive_dataset_metadata]]
+        inherit = INSTALL, PROCESS, TINY_JOB
+        script = """
+            python ${CYLC_WORKFLOW_RUN_DIR}/bin/derive_dataset_metadata.py \
+                --dataset-name $DATASET_NAME \
+                --conf-csv $CYLC_WORKFLOW_RUN_DIR/conf/dataset_metadata.csv \
+                --output-yaml $CYLC_WORKFLOW_SHARE_DIR/dataset_metadata.yaml
+        """
+
+    [[finish_install]]
+        inherit = INSTALL, LOCAL_JOB
+        script = echo "Finished installation"
 
     [[finish_cycle]]
         inherit = PROCESS, LOCAL_JOB
@@ -136,6 +151,7 @@
                 -d $INPUT_DIR/../metadata.yaml \
                 -d $INPUT_DIR/env.yaml \
                 -m $CYLC_WORKFLOW_RUN_DIR/conf/dataspec.yaml \
+                -m $CYLC_WORKFLOW_SHARE_DIR/dataset_metadata.yaml \
                 -m $CYLC_WORKFLOW_RUN_DIR/conf/{{ realm }}.yaml \
                 --fnregex='access-esm1p6\.\w+(?:\.\dd)?\.(?P<var>\w+)\.(?P<freq>\w{2,4})(?:\.\w+)?(?:\.\d{4})?\.nc' \
                 $REALM_POSTPROCESSED_DIR/*.nc
