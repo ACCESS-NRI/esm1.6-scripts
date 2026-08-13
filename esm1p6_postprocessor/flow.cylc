@@ -50,7 +50,7 @@
 
 {% for realm in REALMS %}
             fetch_schema[^] & addmeta_{{ realm }}:succeeded
-                => validatemeta_{{ realm }}
+                => validatemeta_{{ realm }} & verifydata_{{ realm }}
                 => publish_{{ realm }}
     {% if DELETE_OLD_DATA and not SCRATCH_MODE %}
                 => delete_old_{{ realm }}
@@ -129,7 +129,7 @@
             REALM_ARCHIVE_DIR = "$REALM_INPUT_DIR/old_data_archive"
 
     [[addmeta_{{ realm }}]]
-        inherit = {{ realm | upper }}, SMALL_JOB
+        inherit = {{ realm | upper }}, TINY_JOB
         script = """
             addmeta \
                 -v -s --update-history \
@@ -142,13 +142,24 @@
         """
 
     [[validatemeta_{{ realm }}]]
-        inherit = {{ realm | upper }}, SMALL_JOB
+        inherit = {{ realm | upper }}, TINY_JOB
 
         script = """
             validatemeta \
                 -v \
                 -s $CYLC_WORKFLOW_SHARE_DIR/ACCESS-schema.json \
                 $REALM_POSTPROCESSED_DIR/*.nc
+        """
+
+    [[verifydata_{{ realm }}]]
+        inherit = {{ realm | upper }}, MEDIUM_JOB
+
+        script = """
+            python ${CYLC_WORKFLOW_RUN_DIR}/bin/check_esm1p6_data.py \
+                -s $REALM_NETCDF_DIR/*.nc \
+                -d $REALM_POSTPROCESSED_DIR/*.nc \
+                --realm {{ realm }} \
+                --verbose
         """
 
     [[publish_{{ realm }}]]
@@ -208,9 +219,13 @@
                 $REALM_NETCDF_DIR/*.nc
         """
 
+    [[verifydata_ice]]
+        # Tweak job size
+        inherit = ICE, TINY_JOB
+
     #### OCEAN
     [[copy_files_ocean]]
-        inherit = OCEAN, SMALL_JOB
+        inherit = OCEAN, TINY_JOB
         script = """
             mkdir -p "$REALM_POSTPROCESSED_DIR"
             # Need to match permissions at the destination, not source
@@ -221,7 +236,7 @@
         """
 
     [[addmeta_realm_ocean]]
-        inherit = OCEAN, SMALL_JOB
+        inherit = OCEAN, TINY_JOB
         # Use add meta to add the realm to the attributes before it's removed
         # from the filename by renaming
         script = """
@@ -241,3 +256,7 @@
     [[rename_ocean]]
         inherit = OCEAN, LOCAL_JOB
         script = python3 ${CYLC_WORKFLOW_RUN_DIR}/bin/rename_ocean.py $REALM_POSTPROCESSED_DIR/*.nc
+
+    [[verifydata_ocean]]
+        # Tweak job size
+        inherit = OCEAN, SMALL_JOB
