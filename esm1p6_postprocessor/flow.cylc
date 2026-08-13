@@ -215,6 +215,7 @@
                 --output-dir "$REALM_POSTPROCESSED_DIR" \
                 --input-group-regex 'aiihca\.p[aceij]-\d{4}(?P<wild>\d{2})(_mon|_dai|_3hr|_6hr){0,1}\.nc' \
                 --use-esm1p6-filenames \
+                --fix-cell-methods \
                 --skip-existing \
                 --verbose \
                 $REALM_NETCDF_DIR/*.nc
@@ -230,6 +231,7 @@
                 --output-dir "$REALM_POSTPROCESSED_DIR" \
                 --input-group-regex 'iceh-1(daily|monthly)-mean_\d{4}-(?P<wild>\d{2})\.nc' \
                 --use-esm1p6-filenames \
+                --fix-cell-methods \
                 --skip-existing \
                 --verbose \
                 $REALM_NETCDF_DIR/*.nc
