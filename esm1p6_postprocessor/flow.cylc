@@ -153,6 +153,7 @@
                 -m $CYLC_WORKFLOW_RUN_DIR/conf/dataspec.yaml \
                 -m $CYLC_WORKFLOW_SHARE_DIR/dataset_metadata.yaml \
                 -m $CYLC_WORKFLOW_RUN_DIR/conf/{{ realm }}.yaml \
+                -m $CYLC_WORKFLOW_RUN_DIR/conf/fix_standard_name.yaml \
                 --fnregex='access-esm1p6\.\w+(?:\.\dd)?\.(?P<var>\w+)\.(?P<freq>\w{2,4})(?:\.\w+)?(?:\.\d{4})?\.nc' \
                 $REALM_POSTPROCESSED_DIR/*.nc
         """
