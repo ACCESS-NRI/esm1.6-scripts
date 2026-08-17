@@ -1,8 +1,5 @@
 #!jinja2
 
-# TODO:
-# - Fix FIXMEs
-
 # Get the last outputX directory for this dataset
 # Typically the outputX number is 3 digits but for very long runs it can be 4
 # Need to extract the number, convert to int and get the largest value
@@ -155,7 +152,7 @@
                 -m $CYLC_WORKFLOW_RUN_DIR/conf/{{ realm }}.yaml \
                 -m $CYLC_WORKFLOW_RUN_DIR/conf/fix_standard_name.yaml \
                 --fnregex='access-esm1p6\.\w+(?:\.\dd)?\.(?P<var>\w+)\.(?P<freq>\w{2,4})(?:\.\w+)?(?:\.\d{4})?\.nc' \
-                $REALM_POSTPROCESSED_DIR/*.nc
+                $REALM_OUTPUT_DIR/*.nc
         """
 
     [[validatemeta_{{ realm }}]]
@@ -171,10 +168,11 @@
     [[verifydata_{{ realm }}]]
         inherit = {{ realm | upper }}, MEDIUM_JOB
 
+        # to verify already completed data use REALM_OUTPUT_DIR instead of REALM_POSTPROCESSED_DIR
         script = """
             python ${CYLC_WORKFLOW_RUN_DIR}/bin/check_esm1p6_data.py \
                 -s $REALM_NETCDF_DIR/*.nc \
-                -d $REALM_POSTPROCESSED_DIR/*.nc \
+                -d $REALM_OUTPUT_DIR/*.nc \
                 --realm {{ realm }} \
                 --verbose
         """
