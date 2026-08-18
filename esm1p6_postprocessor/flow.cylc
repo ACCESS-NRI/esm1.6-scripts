@@ -32,6 +32,9 @@
         # Initial cycle point
         R1 = """
             build_venv => fetch_schema & derive_dataset_metadata => finish_install
+{% if SCRATCH_MODE and SCRATCH_COPY_OTHER_FILES %}
+            build_venv:succeeded => copy_other_files => tarball_log_dirs
+{% endif %}
         """
 
         # Every cycle
@@ -76,7 +79,8 @@
             # OUTPUT_DIR refers the to directory where files are written by this
             # suite not dataset/outputX
 {% if SCRATCH_MODE %}
-            OUTPUT_DIR = "{{ SCRATCH_DIR }}/$DATASET_NAME/output$OUTPUT_NUM"
+            SCRATCH_DATASET_DIR = "{{ SCRATCH_DIR }}/$DATASET_NAME"
+            OUTPUT_DIR = "$SCRATCH_DATASET_DIR/output$OUTPUT_NUM"
 {% else %}
             OUTPUT_DIR = "$INPUT_DIR"
 {% endif %}
@@ -113,6 +117,32 @@
                 --dataset-name $DATASET_NAME \
                 --conf-csv $CYLC_WORKFLOW_RUN_DIR/conf/dataset_metadata.csv \
                 --output-yaml $CYLC_WORKFLOW_SHARE_DIR/dataset_metadata.yaml
+        """
+
+    [[copy_other_files]]
+        inherit = PROCESS, MEDIUM_COPYQ_JOB
+        script = """
+            echo "Copying all files that aren't outputX netCDF files from $DATASET_DIR to ${{ SCRATCH_DIR }}/$DATASET_NAME"
+
+            # Exclude .nc files in outputX dirs
+            # Exclude netCDF directories in outputX/atmosphere
+            rsync -a --verbose --partial \
+                --no-o --no-g --no-p --chmod=ugo=rwX \
+                --exclude 'output*/**.nc' \
+                --exclude 'output*/atmosphere/netCDF/' \
+                $DATASET_DIR $(dirname $SCRATCH_DATASET_DIR)
+        """
+
+    [[tarball_log_dirs]]
+        inherit = PROCESS, TINY_JOB
+        script = """
+            for d in error_logs pbs_logs; do
+                echo "Tarballing $d"
+                cd $SCRATCH_DATASET_DIR/$d && tar -zcvf ../$d.tar.gz * && cd -
+
+                echo "Deleting $d"
+                rm -vr $SCRATCH_DATASET_DIR/$d
+            done
         """
 
     [[finish_install]]
