@@ -301,7 +301,7 @@
         """
 
     [[rename_ocean]]
-        inherit = OCEAN, LOCAL_JOB
+        inherit = OCEAN, TINY_JOB
         script = python3 ${CYLC_WORKFLOW_RUN_DIR}/bin/rename_ocean.py $REALM_POSTPROCESSED_DIR/*.nc
 
     [[verifydata_ocean]]
