@@ -34,10 +34,12 @@ def main():
     for filepath in argv[1:]:
         old_path = Path(filepath)
 
+        print(f"{old_path.name} ->", end='')
+
         new_name = build_new_name(old_path.name)
         new_path = old_path.parent / new_name
 
-        print(f"{old_path.name} -> {new_name}")
+        print(f" {new_name}")
 
         if new_path.exists():
             raise FileExistsError(f"Cannot rename {old_path} to {new_path}, file already exists")
