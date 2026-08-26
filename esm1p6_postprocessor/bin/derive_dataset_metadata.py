@@ -20,6 +20,7 @@ def get_metadata(dataset_name, csv_path):
         'branch_time_in_parent',
         'experiment_repo',
         'run_id',
+        'base_configuration',
     ]
 
     df = pd.read_csv(csv_path, delimiter='\t')
