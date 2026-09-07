@@ -44,7 +44,6 @@
             finish_install[^] => splitnc_ice => addmeta_ice
 
             finish_install[^] => copy_files_ocean
-                => addmeta_realm_ocean
                 => rename_ocean
                 => addmeta_ocean
 
@@ -280,24 +279,6 @@
             rsync --archive --partial --verbose \
                 --chmod=ugo=rwX \
                 $REALM_NETCDF_DIR/*.nc "$REALM_POSTPROCESSED_DIR/"
-        """
-
-    [[addmeta_realm_ocean]]
-        inherit = OCEAN, TINY_JOB
-        # Use add meta to add the realm to the attributes before it's removed
-        # from the filename by renaming
-        script = """
-            addmeta \
-                -v -s --update-history \
-                -m $CYLC_WORKFLOW_RUN_DIR/conf/realm_only.yaml \
-                --datavar realm='ocean' \
-                $REALM_POSTPROCESSED_DIR/ocean-*.nc
-
-            addmeta \
-                -v -s --update-history \
-                -m $CYLC_WORKFLOW_RUN_DIR/conf/realm_only.yaml \
-                --datavar freq='ocnBgchem' \
-                $REALM_POSTPROCESSED_DIR/oceanbgc-*.nc
         """
 
     [[rename_ocean]]

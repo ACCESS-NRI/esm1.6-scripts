@@ -1,2 +1,4 @@
-# Intentionally left empty for ocean
 global:
+  realm: ocean
+  geospatial_lon_max: 80
+  geospatial_lon_min: -280
