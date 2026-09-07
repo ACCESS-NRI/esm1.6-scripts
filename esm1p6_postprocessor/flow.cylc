@@ -1,0 +1,290 @@
+#!jinja2
+
+# Get the last outputX directory for this dataset
+# Typically the outputX number is 3 digits but for very long runs it can be 4
+# Need to extract the number, convert to int and get the largest value
+# Jinja, variables, loops, scope is a bit complicated hence namespace etc.
+{% from "glob" import glob %}
+{% set output_dirs =  glob(DATASET_DIR ~ "/output*") | sort %}
+{% set output_ints = namespace(vals=[]) %}
+{% for output_dir in output_dirs %}
+    {% set output_int = output_dir.split("output")[-1] | int %}
+    {% set output_ints.vals = output_ints.vals  + [output_int] %}
+{% endfor %}
+
+[meta]
+    title = ESM1.6 Data Postprocessing
+
+[scheduling]
+    cycling mode = integer
+    initial cycle point = 0
+    # Set the final cycle point to number of the last output??? dir
+    final cycle point = {{ output_ints.vals | max }}
+
+    runahead limit = P{{ RUNAHEAD_LIMIT }}
+
+    [[queues]]
+        [[[PBS_QUEUE]]]
+            limit = {{ PBS_LIMIT }}
+            members = PBS
+
+    [[graph]]
+        # Initial cycle point
+        R1 = """
+            build_venv => fetch_schema & derive_dataset_metadata => finish_install
+{% if SCRATCH_MODE and SCRATCH_COPY_OTHER_FILES %}
+            build_venv:succeeded => copy_other_files => tarball_log_dirs
+{% endif %}
+        """
+
+        # Every cycle
+        P1 = """
+            finish_install[^] => splitnc_atmosphere => addmeta_atmosphere
+
+            finish_install[^] => splitnc_ice => addmeta_ice
+
+            finish_install[^] => copy_files_ocean
+                => rename_ocean
+                => addmeta_ocean
+
+{% for realm in REALMS %}
+            addmeta_{{ realm }}:succeeded
+                => validatemeta_{{ realm }} & verifydata_{{ realm }}
+                => publish_{{ realm }}
+    {% if DELETE_OLD_DATA and not SCRATCH_MODE %}
+                => delete_old_{{ realm }}
+    {% endif %}
+                => finish_{{ realm }}
+{% endfor %}
+
+            FINISH_REALM:succeed-all => finish_cycle
+        """
+
+        # Final cycle point
+        R1/$ = """
+            finish_cycle:succeeded => finish_dataset
+        """
+
+[runtime]
+    {% include 'conf/job_directives.conf' %}
+
+    [[PROCESS]]
+        [[[environment]]]
+            DATASET_DIR = "{{ DATASET_DIR }}"
+            DATASET_NAME = "$(basename $DATASET_DIR)"
+            # Note '%03d' will still use more than 3 digits for large numbers
+            OUTPUT_NUM = "$(printf '%03d' $CYLC_TASK_CYCLE_POINT)"
+            INPUT_DIR = "{{ DATASET_DIR }}/output$OUTPUT_NUM"
+            # OUTPUT_DIR refers the to directory where files are written by this
+            # suite not dataset/outputX
+{% if SCRATCH_MODE %}
+            SCRATCH_DATASET_DIR = "{{ SCRATCH_DIR }}/$DATASET_NAME"
+            OUTPUT_DIR = "$SCRATCH_DATASET_DIR/output$OUTPUT_NUM"
+{% else %}
+            OUTPUT_DIR = "$INPUT_DIR"
+{% endif %}
+
+    [[FINISH_REALM]]
+        # DUMMY family to tidy up graph
+
+    [[INSTALL]]
+
+    [[build_venv]]
+        inherit = INSTALL
+
+        script = """
+            # analysis3 already has dask etc. installed
+            module use /g/data/xp65/public/modules/
+            module load conda/analysis3
+
+            # Create a new venv
+            python -m venv $CYLC_WORKFLOW_SHARE_DIR/venv
+            source $CYLC_WORKFLOW_SHARE_DIR/venv/bin/activate
+
+            # Install the needed packages
+            python -m pip install json_ref_dict addmeta splitnc
+        """
+
+    [[fetch_schema]]
+        inherit = INSTALL, SMALL_COPYQ_JOB
+        script = python ${CYLC_WORKFLOW_RUN_DIR}/bin/grab_schema.py $CYLC_WORKFLOW_SHARE_DIR/ACCESS-schema.json
+
+    [[derive_dataset_metadata]]
+        inherit = INSTALL, PROCESS, TINY_JOB
+        script = """
+            python ${CYLC_WORKFLOW_RUN_DIR}/bin/derive_dataset_metadata.py \
+                --dataset-name $DATASET_NAME \
+                --conf-csv $CYLC_WORKFLOW_RUN_DIR/conf/dataset_metadata.csv \
+                --output-yaml $CYLC_WORKFLOW_SHARE_DIR/dataset_metadata.yaml
+        """
+
+    [[copy_other_files]]
+        inherit = PROCESS, MEDIUM_COPYQ_JOB
+        script = """
+            echo "Copying all files that aren't outputX netCDF files from $DATASET_DIR to ${{ SCRATCH_DIR }}/$DATASET_NAME"
+
+            # Exclude .nc files in outputX dirs
+            # Exclude netCDF directories in outputX/atmosphere
+            rsync -a --verbose --partial \
+                --no-o --no-g --no-p --chmod=ugo=rwX \
+                --exclude 'output*/**.nc' \
+                --exclude 'output*/atmosphere/netCDF/' \
+                $DATASET_DIR $(dirname $SCRATCH_DATASET_DIR)
+        """
+
+    [[tarball_log_dirs]]
+        inherit = PROCESS, TINY_JOB
+        script = """
+            for d in error_logs pbs_logs; do
+                echo "Tarballing $d"
+                cd $SCRATCH_DATASET_DIR/$d && tar -zcvf ../$d.tar.gz * && cd -
+
+                echo "Deleting $d"
+                rm -vr $SCRATCH_DATASET_DIR/$d
+            done
+        """
+
+    [[finish_install]]
+        inherit = INSTALL, LOCAL_JOB
+        script = echo "Finished installation"
+
+    [[finish_cycle]]
+        inherit = PROCESS, LOCAL_JOB
+        script = echo "End of processing for output$CYLC_TASK_CYCLE_POINT"
+
+    [[finish_dataset]]
+        inherit = LOCAL_JOB
+        script = echo "End of processing for {{ DATASET_DIR }}"
+
+    #### SHARED
+{% for realm in REALMS %}
+    # Define a family for each realm
+    [[{{ realm | upper }}]]
+        inherit = PROCESS
+        [[[environment]]]
+            REALM = "{{ realm }}"
+            REALM_INPUT_DIR = "$INPUT_DIR/$REALM"
+            REALM_OUTPUT_DIR = "$OUTPUT_DIR/$REALM"
+            REALM_NETCDF_DIR = "$REALM_INPUT_DIR"
+            REALM_POSTPROCESSED_DIR = "$REALM_OUTPUT_DIR/postprocessed"
+            REALM_ARCHIVE_DIR = "$REALM_INPUT_DIR/old_data_archive"
+
+    [[addmeta_{{ realm }}]]
+        inherit = {{ realm | upper }}, TINY_JOB
+        script = """
+            addmeta \
+                -v -s --update-history \
+                -d $INPUT_DIR/../metadata.yaml \
+                -d $INPUT_DIR/env.yaml \
+                -m $CYLC_WORKFLOW_RUN_DIR/conf/dataspec.yaml \
+                -m $CYLC_WORKFLOW_SHARE_DIR/dataset_metadata.yaml \
+                -m $CYLC_WORKFLOW_RUN_DIR/conf/{{ realm }}.yaml \
+                -m $CYLC_WORKFLOW_RUN_DIR/conf/fix_standard_name.yaml \
+                --fnregex='access-esm1p6\.\w+(?:\.\dd)?\.(?P<var>\w+)\.(?P<freq>\w{2,4})(?:\.\w+)?(?:\.\d{4})?\.nc' \
+                $REALM_POSTPROCESSED_DIR/*.nc
+        """
+
+    [[validatemeta_{{ realm }}]]
+        inherit = {{ realm | upper }}, TINY_JOB
+
+        script = """
+            validatemeta \
+                -v \
+                -s $CYLC_WORKFLOW_SHARE_DIR/ACCESS-schema.json \
+                $REALM_POSTPROCESSED_DIR/*.nc
+        """
+
+    [[verifydata_{{ realm }}]]
+        inherit = {{ realm | upper }}, MEDIUM_JOB
+
+        # to verify already completed data use REALM_OUTPUT_DIR instead of REALM_POSTPROCESSED_DIR
+        script = """
+            python ${CYLC_WORKFLOW_RUN_DIR}/bin/check_esm1p6_data.py \
+                -s $REALM_NETCDF_DIR/*.nc \
+                -d $REALM_POSTPROCESSED_DIR/*.nc \
+                --realm {{ realm }} \
+                --verbose
+        """
+
+    [[publish_{{ realm }}]]
+        inherit = {{ realm | upper }}, LOCAL_JOB
+
+        script = """
+    {% if not SCRATCH_MODE %}
+            mkdir -vp $REALM_ARCHIVE_DIR
+            mv -v $REALM_NETCDF_DIR/*.nc $REALM_ARCHIVE_DIR/
+    {% endif %}
+            mv -v $REALM_POSTPROCESSED_DIR/*.nc $REALM_OUTPUT_DIR/
+            rmdir -v $REALM_POSTPROCESSED_DIR
+        """
+
+    [[delete_old_{{ realm }}]]
+        inherit = {{ realm | upper }}, LOCAL_JOB
+
+        script = rm -rv "$REALM_ARCHIVE_DIR"
+
+    [[finish_{{ realm }}]]
+        # Dummy task to tidy up graph
+        inherit = {{ realm | upper }}, FINISH_REALM
+{% endfor %}
+
+    #### ATMOSPHERE
+    [[ATMOSPHERE]]
+        # atmos has the orginal netCDFs in a different directory
+        [[[environment]]]
+            REALM_NETCDF_DIR = "$REALM_INPUT_DIR/netCDF"
+
+    [[splitnc_atmosphere]]
+        inherit = ATMOSPHERE, LARGE_JOB
+        script = """
+            splitnc \
+                --shared-vars latitude_longitude \
+                --rename-regex '(?P<newname>.+)_\d+' \
+                --output-dir "$REALM_POSTPROCESSED_DIR" \
+                --input-group-regex 'aiihca\.p[aceij]-\d{4}(?P<wild>\d{2})(_mon|_dai|_3hr|_6hr){0,1}\.nc' \
+                --use-esm1p6-filenames \
+                --fix-cell-methods \
+                --skip-existing \
+                --verbose \
+                $REALM_NETCDF_DIR/*.nc
+        """
+
+    #### ICE
+    [[splitnc_ice]]
+        inherit = ICE, MEDIUM_JOB
+        script = """
+            splitnc \
+                --shared-vars uarea,tmask,tarea \
+                --excluded-vars VGRD. \
+                --output-dir "$REALM_POSTPROCESSED_DIR" \
+                --input-group-regex 'iceh-1(daily|monthly)-mean_\d{4}-(?P<wild>\d{2})\.nc' \
+                --use-esm1p6-filenames \
+                --fix-cell-methods \
+                --skip-existing \
+                --verbose \
+                $REALM_NETCDF_DIR/*.nc
+        """
+
+    [[verifydata_ice]]
+        # Tweak job size
+        inherit = ICE, TINY_JOB
+
+    #### OCEAN
+    [[copy_files_ocean]]
+        inherit = OCEAN, TINY_JOB
+        script = """
+            mkdir -p "$REALM_POSTPROCESSED_DIR"
+            # Need to match permissions at the destination, not source
+            # e.g. no write permission on original files
+            rsync --archive --partial --verbose \
+                --chmod=ugo=rwX \
+                $REALM_NETCDF_DIR/*.nc "$REALM_POSTPROCESSED_DIR/"
+        """
+
+    [[rename_ocean]]
+        inherit = OCEAN, TINY_JOB
+        script = python3 ${CYLC_WORKFLOW_RUN_DIR}/bin/rename_ocean.py $REALM_POSTPROCESSED_DIR/*.nc
+
+    [[verifydata_ocean]]
+        # Tweak job size
+        inherit = OCEAN, SMALL_JOB

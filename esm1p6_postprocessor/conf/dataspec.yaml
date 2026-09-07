@@ -1,0 +1,64 @@
+global:
+  # base_configuration differs, extracted from dataset_metadata.csv
+  # base_configuration:
+  contact: "{{ metadata.contact }} ({{ metadata.email}})"
+  Conventions: "CF-1.11,ACDD-1.3"
+  data_specification: "ACCESS-Output Data Specification v0.4.0"
+  date_created: "{{ __file__.mtime }}"
+  date_metadata_modified: "{{ __datetime__.now }}"
+  # date_modified refers to data but we just modified the files
+  date_modified: "{{ __datetime__.now }}"
+  experiment_repo: "{{ metadata.url }}"
+  experiment_uuid: "{{ metadata.experiment_uuid }}"
+  filename: "{{ __file__.name }}"
+  frequency: "{{ __file__.freq }}"
+  # Lat bounds are the same for all realms
+  geospatial_lat_max: 90
+  geospatial_lat_min: -90
+  # Lon bounds differ b/w realms
+  grid: "access-1deg-global"
+  id: "{{ metadata.experiment_uuid }}"
+  license: "{{ metadata.license }}"
+  model: "{{ metadata.model }}"
+  model_version: "{{ metadata.version }}"
+  # parent_experiment_branch_time per experiment extracted from dataset_metadata.csv
+  # parent_experiment_branch_time:
+  # parent_experiment_uuid per experiment extracted from dataset_metadata.csv
+  # parent_experiment_uuid:
+  # run_id per exeriment extracted from dataset_metadata.csv
+  # run_id: "{{ env.RUNID }}"
+  title: "{{ metadata.name }}"
+  variable_id: "{{ __file__.var }}"
+
+# Attrs/renames for missing vars will be ignored (i.e. time for freq=fx files)
+variables:
+  time:
+    axis: "T"
+    bounds: "time_bnds"
+    calendar: "proleptic_gregorian"
+    calendar_type:
+    long_name: "time"
+    standard_name: "time"
+
+  # time_bnds should have no attributes
+  # these are known attrs that should be removed
+  time_bnds:
+    axis:
+    calendar:
+    long_name:
+    standard_name:
+    units:
+    missing_value:
+    _FillValue:
+
+rename:
+  variables:
+    # ice files use "time_bounds", rename to "time_bnds"
+    time_bounds: time_bnds
+    # ocean files have second "time_bnds" dimension as a variable too
+    nv: bnds
+  dimensions:
+    # ice files use "d2" as the second dimension for "time_bnds"
+    d2: bnds
+    # ocean files use "nv" as the second dimension for "time_bnds"
+    nv: bnds
