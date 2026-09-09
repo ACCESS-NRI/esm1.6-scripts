@@ -1,5 +1,5 @@
 model_type: access-esm1.6
-repository_url: https://github.com/accESS-NRI/access-esm1.6-configs/
+repository_url: https://github.com/ACCESS-NRI/access-esm1.6-configs/
 start_point: "87bfeffb76375c38b35ee74c2f7fbaa5fa40d34d" # scen7-vl PR. TODO: use release branch 
 test_path: scen7-vl-ensemble # All control and perturbation experiment repositories will be created here; can be relative, absolute or ~ (user-defined)
 repository_directory: scen7-vl # Local directory name for the central repository (user-defined)
