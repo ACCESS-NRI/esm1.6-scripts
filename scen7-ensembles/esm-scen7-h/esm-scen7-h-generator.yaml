@@ -25,13 +25,13 @@ Control_Experiment:
     long_description: |-
        ACCESS-ESM1.6 global coupled model configuration running with an interactive carbon cycle under under scenario esm-scen7-h forcings. Scenario forcing data including anthropogenic co2 emissions are primarily sourced from the input4MIPs CMIP7 datasets.
     frequency:
-    - fx
-    - 1yr
-    - 1mon
-    - 1day
-    - 6hr
-    - 3hr
-    - 1hr
+      - fx
+      - 1yr
+      - 1mon
+      - 1day
+      - 6hr
+      - 3hr
+      - 1hr
     
 
 # this block of changes is applied to each single branch
