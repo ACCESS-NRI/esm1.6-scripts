@@ -1,0 +1,94 @@
+model_type: access-esm1.6
+repository_url: https://github.com/accESS-NRI/access-esm1.6-configs/
+start_point: "87bfeffb76375c38b35ee74c2f7fbaa5fa40d34d" # scen7-vl PR. TODO: use release branch 
+test_path: scen7-vl-ensemble # All control and perturbation experiment repositories will be created here; can be relative, absolute or ~ (user-defined)
+repository_directory: scen7-vl # Local directory name for the central repository (user-defined)
+
+control_branch_name: scen7-vl-1.0-r1i1p1f1
+
+# this block of changes is applied to all branches
+Control_Experiment:
+  config.yaml: 
+    sync:
+      base_path:  /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/scen7-vl
+      enable: False
+    restart: /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-concentrations-historical/historical-historical-1.1-r1i1p1f1-01409bc3/historical-historical-1.1-r1i1p1f1-01409bc3/restart171
+    restart_freq: 1YS
+    project: p66
+    shortpath: /scratch/p66/
+  metadata.yaml:
+    name: scen7-vl-r1i1p1f1-2026.09.09
+    url: https://github.com/ACCESS-NRI/access-esm1.6-experiments
+    parent_experiment: 01409bc3-2ad3-4d0e-9552-074979ac631d
+    parent_experiment_branch_commit: bcc6153526955b2d5a0f3c4a1358270ad4f7b557
+    branch_time_in_parent : "2022-01-01"
+    long_description: |-
+        ACCESS-ESM1.6 global coupled model configuration running in co2 concentration driven mode under scenario scen7-vl forcings. Scenario forcing data including atmospheric co2 concentrations are primarily sourced from the input4MIPs CMIP7 datasets.
+    frequency:
+    - fx
+    - 1yr
+    - 1mon
+    - 1day
+    - 6hr
+    - 3hr
+    - 1hr
+    
+
+# this block of changes is applied to each single branch
+Perturbation_Experiment:
+  Parameter_block1:
+    branches:
+      - scen7-vl-1.0-r2i1p1f1
+      - scen7-vl-1.0-r3i1p1f1
+      - scen7-vl-1.0-r4i1p1f1
+      - scen7-vl-1.0-r5i1p1f1
+      - scen7-vl-1.0-r6i1p1f1
+      - scen7-vl-1.0-r7i1p1f1
+      - scen7-vl-1.0-r8i1p1f1
+      - scen7-vl-1.0-r9i1p1f1
+      - scen7-vl-1.0-r10i1p1f1
+
+    config.yaml:
+      restart:
+        - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-concentrations-historical/historical-historical-1.1-r2i1p1f1-faef2965/historical-historical-1.1-r2i1p1f1-faef2965/restart171
+        - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-concentrations-historical/historical-historical-1.1-r3i1p1f1-6052d747/historical-historical-1.1-r3i1p1f1-6052d747/restart171
+        - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-concentrations-historical/historical-historical-1.1-r4i1p1f1-35855ee5/historical-historical-1.1-r4i1p1f1-35855ee5/restart171
+        - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-concentrations-historical/historical-historical-1.1-r5i1p1f1-30c9935c/historical-historical-1.1-r5i1p1f1-30c9935c/restart171
+        - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-concentrations-historical/historical-historical-1.1-r6i1p1f1-4742e54d/historical-historical-1.1-r6i1p1f1-4742e54d/restart171
+        - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-concentrations-historical/historical-historical-1.1-r7i1p1f1-2399b4a4/historical-historical-1.1-r7i1p1f1-2399b4a4/restart171
+        - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-concentrations-historical/historical-historical-1.1-r8i1p1f1-ab5c6b2a/historical-historical-1.1-r8i1p1f1-ab5c6b2a/restart171
+        - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-concentrations-historical/historical-historical-1.1-r9i1p1f1-db6902f6/historical-historical-1.1-r9i1p1f1-db6902f6/restart171
+        - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-concentrations-historical/historical-historical-1.1-r10i1p1f1-aaca3142/historical-historical-1.1-r10i1p1f1-aaca3142/restart171
+    metadata.yaml:
+      name:
+        - scen7-vl-r2i1p1f1-2026.09.09
+        - scen7-vl-r3i1p1f1-2026.09.09
+        - scen7-vl-r4i1p1f1-2026.09.09
+        - scen7-vl-r5i1p1f1-2026.09.09
+        - scen7-vl-r6i1p1f1-2026.09.09
+        - scen7-vl-r7i1p1f1-2026.09.09
+        - scen7-vl-r8i1p1f1-2026.09.09
+        - scen7-vl-r9i1p1f1-2026.09.09
+        - scen7-vl-r10i1p1f1-2026.09.09
+      parent_experiment: 
+        - faef2965-5944-4ffc-b85c-d998285b7960
+        - 6052d747-304e-436b-9543-ee6ecdec8518
+        - 35855ee5-a0c9-4264-8716-4bc89c49714a
+        - 30c9935c-e547-4486-b038-ee1956d17d57
+        - 4742e54d-3303-4cb0-b5cc-5e9add419fba
+        - 2399b4a4-16f1-471b-8a1f-d0e37ebd6dc7
+        - ab5c6b2a-2045-473c-99d9-1dee78462b8f
+        - db6902f6-e63a-4951-9ff0-f5fb0a5f5236
+        - aaca3142-20d2-43d4-94ab-c6417fd73f3d
+      parent_experiment_branch_commit:
+        - 618e5b7440cef3e2e129a1fb510066ffda7d90a0
+        - 7d1b4233e210cf580ee79e3aae84989a199bb7f6
+        - 9d6429c503fdd86331b35df871cc04c2a2c25dc1
+        - 00ac6c670c46b8d43eb2194ff04280fc82d1e35c
+        - 90bff2930dbbe9c1fbaac6e1bac516bbae69f59b
+        - eccc994b851ff44fa89956d8a6bcf2cc96ce1e33
+        - 422c61877bc863f747908c2aa112696e35d99d2d
+        - 34223ae2576ed1d766174897e05afa4b621e7c22
+        - 99e822972cd783a9c6ce9117ce40fe644e39bc02
+
+

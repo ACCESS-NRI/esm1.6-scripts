@@ -1,0 +1,198 @@
+model_type: access-esm1.6
+repository_url: https://github.com/accESS-NRI/access-esm1.6-configs/
+start_point: "1c6a6d5d7abf12bfaef3a04b3a1e4d1029da47e0" # scen7-vl PR. TODO: use release branch 
+test_path: esm-scen7-vl-ensemble # All control and perturbation experiment repositories will be created here; can be relative, absolute or ~ (user-defined)
+repository_directory: esm-scen7-vl # Local directory name for the central repository (user-defined)
+
+control_branch_name: esm-scen7-vl-1.0-r1i1p1f1
+
+# this block of changes is applied to all branches
+Control_Experiment:
+  config.yaml: 
+    sync:
+      base_path:  /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/esm-scen7-vl
+      enable: False
+    restart: /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-esm-historical/esm-historical-esm-historical-1.1-r1i1p1f1-135fafe6/restart171
+    restart_freq: 1YS
+    project: p66
+    shortpath: /scratch/p66/
+  metadata.yaml:
+    name: esm-scen7-vl-r1i1p1f1-2026.09.09
+    url: https://github.com/ACCESS-NRI/access-esm1.6-experiments
+    parent_experiment: 135fafe6-5457-4300-a3d9-56138a932b99
+    parent_experiment_branch_commit: d6a12610bf69ca1955ad21dba8fbc95dc427236b
+    branch_time_in_parent : "2022-01-01"
+    long_description: |-
+       ACCESS-ESM1.6 global coupled model configuration running with an interactive carbon cycle under scenario esm-scen7-vl forcings. Scenario forcing data including anthropogenic co2 emissions are primarily sourced from the input4MIPs CMIP7 datasets.
+    frequency:
+    - fx
+    - 1yr
+    - 1mon
+    - 1day
+    - 6hr
+    - 3hr
+    - 1hr
+    
+
+# this block of changes is applied to each single branch
+Perturbation_Experiment:
+  Parameter_block1:
+    branches:
+      - esm-scen7-vl-1.0-r2i1p1f1
+      - esm-scen7-vl-1.0-r3i1p1f1
+      - esm-scen7-vl-1.0-r4i1p1f1
+      - esm-scen7-vl-1.0-r5i1p1f1
+      - esm-scen7-vl-1.0-r6i1p1f1
+      - esm-scen7-vl-1.0-r7i1p1f1
+      - esm-scen7-vl-1.0-r8i1p1f1
+      - esm-scen7-vl-1.0-r9i1p1f1
+      - esm-scen7-vl-1.0-r10i1p1f1
+      - esm-scen7-vl-1.0-r11i1p1f1
+      - esm-scen7-vl-1.0-r12i1p1f1
+      - esm-scen7-vl-1.0-r13i1p1f1
+      - esm-scen7-vl-1.0-r14i1p1f1
+      - esm-scen7-vl-1.0-r15i1p1f1
+      - esm-scen7-vl-1.0-r16i1p1f1
+      - esm-scen7-vl-1.0-r17i1p1f1
+      - esm-scen7-vl-1.0-r18i1p1f1
+      - esm-scen7-vl-1.0-r19i1p1f1
+      - esm-scen7-vl-1.0-r20i1p1f1
+      - esm-scen7-vl-1.0-r21i1p1f1
+      - esm-scen7-vl-1.0-r22i1p1f1
+      - esm-scen7-vl-1.0-r23i1p1f1
+      - esm-scen7-vl-1.0-r24i1p1f1
+      - esm-scen7-vl-1.0-r25i1p1f1
+      - esm-scen7-vl-1.0-r26i1p1f1
+      - esm-scen7-vl-1.0-r27i1p1f1
+      - esm-scen7-vl-1.0-r28i1p1f1
+      - esm-scen7-vl-1.0-r29i1p1f1
+      - esm-scen7-vl-1.0-r30i1p1f1
+
+
+    config.yaml:
+      restart:
+      - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-esm-historical/esm-historical-esm-historical-1.1-r2i1p1f1-d8a30ca4/restart171
+      - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-esm-historical/esm-historical-esm-historical-1.1-r3i1p1f1-7e8c31ad/restart171
+      - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-esm-historical/esm-historical-esm-historical-1.1-r4i1p1f1-93a39bb3/restart171
+      - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-esm-historical/esm-historical-esm-historical-1.1-r5i1p1f1-33d7dfbf/restart171
+      - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-esm-historical/esm-historical-esm-historical-1.1-r6i1p1f1-295f0b5a/restart171
+      - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-esm-historical/esm-historical-esm-historical-1.1-r7i1p1f1-160950b2/restart171
+      - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-esm-historical/esm-historical-esm-historical-1.1-r8i1p1f1-22a9ee87/restart171
+      - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-esm-historical/esm-historical-esm-historical-1.1-r9i1p1f1-faeb0bae/restart171
+      - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-esm-historical/esm-historical-esm-historical-1.1-r10i1p1f1-c0589abb/restart171
+      - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-esm-historical/esm-historical-esm-historical-1.1-r11i1p1f1-de7b1f04/restart171
+      - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-esm-historical/esm-historical-esm-historical-1.1-r12i1p1f1-090a952e/restart171
+      - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-esm-historical/esm-historical-esm-historical-1.1-r13i1p1f1-9a7e54df/restart171
+      - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-esm-historical/esm-historical-esm-historical-1.1-r14i1p1f1-d7b1858e/restart171
+      - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-esm-historical/esm-historical-esm-historical-1.1-r15i1p1f1-1a8b670c/restart171
+      - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-esm-historical/esm-historical-esm-historical-1.1-r16i1p1f1-919909fe/restart171
+      - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-esm-historical/esm-historical-esm-historical-1.1-r17i1p1f1-7716bd9f/restart171
+      - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-esm-historical/esm-historical-esm-historical-1.1-r18i1p1f1-aa6ff4be/restart171
+      - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-esm-historical/esm-historical-esm-historical-1.1-r19i1p1f1-e1cc46ce/restart171
+      - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-esm-historical/esm-historical-esm-historical-1.1-r20i1p1f1-61805c51/restart171
+      - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-esm-historical/esm-historical-esm-historical-1.1-r21i1p1f1-e137a8d6/restart171
+      - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-esm-historical/esm-historical-esm-historical-1.1-r22i1p1f1-e71ea255/restart171
+      - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-esm-historical/esm-historical-esm-historical-1.1-r23i1p1f1-61420273/restart171
+      - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-esm-historical/esm-historical-esm-historical-1.1-r24i1p1f1-fd4c9cba/restart171
+      - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-esm-historical/esm-historical-esm-historical-1.1-r25i1p1f1-9b5a64ec/restart171
+      - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-esm-historical/esm-historical-esm-historical-1.1-r26i1p1f1-d708e053/restart171
+      - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-esm-historical/esm-historical-esm-historical-1.1-r27i1p1f1-16897734/restart171
+      - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-esm-historical/esm-historical-esm-historical-1.1-r28i1p1f1-995fd081/restart171
+      - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-esm-historical/esm-historical-esm-historical-1.1-r29i1p1f1-a9696d00/restart171
+      - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-esm-historical/esm-historical-esm-historical-1.1-r30i1p1f1-f55e2276/restart171
+
+    metadata.yaml:
+      name:
+        - esm-scen7-vl-r2i1p1f1-2026.09.09
+        - esm-scen7-vl-r3i1p1f1-2026.09.09
+        - esm-scen7-vl-r4i1p1f1-2026.09.09
+        - esm-scen7-vl-r5i1p1f1-2026.09.09
+        - esm-scen7-vl-r6i1p1f1-2026.09.09
+        - esm-scen7-vl-r7i1p1f1-2026.09.09
+        - esm-scen7-vl-r8i1p1f1-2026.09.09
+        - esm-scen7-vl-r9i1p1f1-2026.09.09
+        - esm-scen7-vl-r10i1p1f1-2026.09.09
+        - esm-scen7-vl-r11i1p1f1-2026.09.09
+        - esm-scen7-vl-r12i1p1f1-2026.09.09
+        - esm-scen7-vl-r13i1p1f1-2026.09.09
+        - esm-scen7-vl-r14i1p1f1-2026.09.09
+        - esm-scen7-vl-r15i1p1f1-2026.09.09
+        - esm-scen7-vl-r16i1p1f1-2026.09.09
+        - esm-scen7-vl-r17i1p1f1-2026.09.09
+        - esm-scen7-vl-r18i1p1f1-2026.09.09
+        - esm-scen7-vl-r19i1p1f1-2026.09.09
+        - esm-scen7-vl-r20i1p1f1-2026.09.09
+        - esm-scen7-vl-r21i1p1f1-2026.09.09
+        - esm-scen7-vl-r22i1p1f1-2026.09.09
+        - esm-scen7-vl-r23i1p1f1-2026.09.09
+        - esm-scen7-vl-r24i1p1f1-2026.09.09
+        - esm-scen7-vl-r25i1p1f1-2026.09.09
+        - esm-scen7-vl-r26i1p1f1-2026.09.09
+        - esm-scen7-vl-r27i1p1f1-2026.09.09
+        - esm-scen7-vl-r28i1p1f1-2026.09.09
+        - esm-scen7-vl-r29i1p1f1-2026.09.09
+        - esm-scen7-vl-r30i1p1f1-2026.09.09
+      parent_experiment:
+        - d8a30ca4-fbf6-4c00-97b8-4c1b32018f88
+        - 7e8c31ad-092e-46a7-bf3b-a92d43a535a1
+        - 93a39bb3-11a1-48ef-8a8d-7d6e2c451c26
+        - 33d7dfbf-282c-4b53-88ac-271432f7c9b5
+        - 295f0b5a-fd9c-4c54-90ea-cd185e94a9fa
+        - 160950b2-9467-422b-a087-f9bf2e6245fc
+        - 22a9ee87-9ea8-4c7f-b23d-a4f75876dbad
+        - faeb0bae-c885-4572-94cc-688aaaecda5f
+        - c0589abb-3327-496e-84f2-d42003dc7a01
+        - de7b1f04-256e-45b8-886c-0cc9d4ed21b1
+        - 090a952e-906c-4d47-a208-b6a41e13fdb3
+        - 9a7e54df-7b36-40db-b7ad-88c9e505f879
+        - d7b1858e-6a12-469c-a4f3-671a9e051b2c
+        - 1a8b670c-5663-419e-a94d-17e8b73c2456
+        - 919909fe-e49d-4f52-b17e-60f3698f8041
+        - 7716bd9f-cc9a-46ef-a97e-0f4e672795cb
+        - aa6ff4be-1adc-42fc-a0ea-8c11fc672456
+        - e1cc46ce-979a-477c-8475-f37484983dcb
+        - 61805c51-205e-4473-a0d4-e567ab12f8f9
+        - e137a8d6-5ff4-4465-aac0-0470616fd62c
+        - e71ea255-9dae-4e0b-ab3a-b38f159c62f3
+        - 61420273-1804-43b8-a636-ac351ca1b0d2
+        - fd4c9cba-92d3-4ff2-8ba7-9ba989b6537d
+        - 9b5a64ec-dbc5-4935-98a8-6bd6bf5ed2a7
+        - d708e053-b7db-4a10-9318-d55af708d7c0
+        - 16897734-4456-4279-91f9-b3389d6a7673
+        - 995fd081-7954-427a-a69a-d9d9b8a83ab8
+        - a9696d00-6816-4378-8fe0-da6590389b4e
+        - f55e2276-7970-48cc-9034-d098e34116b4
+      parent_experiment_branch_commit:
+        - ff197d5aa35279569cae57de5e6c1ccf568c6bea
+        - 776ed0b8bfd2e73b50cce520ff0128bd6aae4970
+        - c7e45a81d15ab0109d9efc60e1e47ad81a8357be
+        - 06e02afa372549e5f0b13f6781f1edbd82d666ce
+        - 92013b3bf13445436ad5a04c9d3df9d69bc377de
+        - eaee6fe96a898bc187209a306c2255d9eb687de1
+        - 54e2c399cbabac4f56e4fe3475842c669c5fbe42
+        - b413672139c3cb829b0ac36eca710c5948aab33e
+        - ad929f12610fad40fb4e0462b21b9c48604cc93f
+        - 3b8599093314aef34f9f3f2dbf0914cbb6e09d83
+        - 02ccbd0fb11e271ad6340c609b441c2cc5fb7686
+        - ece66a806f1cb70260011c1d2069959474d1ee7a
+        - a88fe5fd5326318c95adf0c4c319a405a138dc9d
+        - 9ceb87c09c70b5b6c20952820874c4dc2f0f7ba2
+        - 05b13c1cd955ca759d1a6fdb00b190b6c614b77c
+        - dc0756e7762a799ae7b237a225c3f2c2593f449b
+        - a1b8c4146b67359af25246284afdfcf66e064231
+        - fab168018299ae0c80d3a14472cec50f2d1e4192
+        - 5cdcdf212b43c466a8d562c88db242e6c39fe702
+        - f610e1a3a6007939acc7b38ff01e9a6ac85270fd
+        - 2868ebd37f6a9fdfae7136a45b4c1e9a19900894
+        - 9c26352c3ff11831f7701dcef56ff726e1a21a4a
+        - 0d54170495583c722ca72b4ef491eb9ad04f8bb1
+        - 5d7d0f92a81204ebfb4683323357218b1f2aaf61
+        - e4ef85a88ae368042a0d9ca2800295918363fbab
+        - 805dea2e062c7f21303c76fcdddcb1721892a9b4
+        - b9aaa1bbd1ee0e287f628702d4a2892ba8f2a31b
+        - fb39187b4def1b3e41a6f60e02f0373120c79f5f
+        - a248c870e85645c6833b8715e9cfedf761e4e780
+
+
+
+

@@ -1,0 +1,39 @@
+test_path: scen7-vl-ensemble
+repository_directory: scen7-vl
+keep_uuid: True
+running_branches: # List of experiment branches to run.
+  - scen7-vl-1.0-r1i1p1f1
+  - scen7-vl-1.0-r2i1p1f1
+  - scen7-vl-1.0-r3i1p1f1
+  - scen7-vl-1.0-r4i1p1f1
+  - scen7-vl-1.0-r5i1p1f1
+  - scen7-vl-1.0-r6i1p1f1
+  - scen7-vl-1.0-r7i1p1f1
+  - scen7-vl-1.0-r8i1p1f1
+  - scen7-vl-1.0-r9i1p1f1
+  - scen7-vl-1.0-r10i1p1f1
+
+nruns: # Number of runs for each branch; must match the order of running_branches.
+  - 79
+  - 79
+  - 79
+  - 79
+  - 79
+  - 79
+  - 79
+  - 79
+  - 79
+  - 79
+
+startfrom_restart: #cold here means the restart in config.yaml
+  - cold
+  - cold
+  - cold
+  - cold
+  - cold
+  - cold
+  - cold
+  - cold
+  - cold
+  - cold
+
