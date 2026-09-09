@@ -35,6 +35,12 @@ def _parse_args():
             help="Index in vegetations fractions to use as current year"
             )
     parser.add_argument(
+            "--use-previous-fractions-from-restart",
+            default=False,
+            action="store_true",
+            help="Choose to take the previous fractions from the input restart."
+            )
+    parser.add_argument(
             "--fill-all",
             default=False,
             action="store_true",
@@ -203,7 +209,6 @@ def remap_vegetation(
         InputDataset,
         InputVegetation,
         OutputVegetation,
-        PreviousVegetation,
         FillAll,
         Config
         ):
@@ -230,11 +235,6 @@ def remap_vegetation(
     # Add the land fractions- also include previous year as same for LUC
     OutDataset['FRACTIONS OF SURFACE TYPES'] = (('veg', 'lat', 'lon'),
                                                OutputVegetation)
-
-    # Assume the previous year surface fractions are just the same as current,
-    # unless otherwise specified
-    OutDataset['PREVIOUS YEAR SURF FRACTIONS (TILES)'] = \
-        (('veg', 'lat', 'lon'), PreviousVegetation)
 
     # We need to know which tiles to fill, and which to empty. This depends on
     # what mode we're in: if --fill-all is passed, then we fill all empty relevant
@@ -379,29 +379,56 @@ def remap_vegetation(
 
     return OutDataset
 
-if __name__ == '__main__':
-
-    # Process command line args
-    args = _parse_args()
-    OrigDataset = xarray.open_dataset(args.input)
+def run_vegetation_remapping(input, output, vegetation_map, time_index, fill_all, config, use_previous_fractions_from_restart):
+    """
+    Wrapper function to load the files, run the remapping, and save the output file
+    """
+    OrigDataset = xarray.open_dataset(input)
     OrigVegetation = OrigDataset['FRACTIONS OF SURFACE TYPES'].to_numpy()
 
-    Vegetation = xarray.open_dataset(args.vegetation_map)
+    Vegetation = xarray.open_dataset(vegetation_map)
     # Allow the file to contain a time series (as might be prepared for a LUC
     # dataset) or a snapshot.
-    NewVegetation = Vegetation['fraction'][args.time_index, :, :, :].to_numpy()
-    if args.time_index > 0:
-        PrevVegetation = Vegetation['fraction'][args.time_index-1, :, :, :].to_numpy()
-    else:
-        PrevVegetation = Vegetation['fraction'][args.time_index, :, :, :].to_numpy()
+    NewVegetation = Vegetation['fraction'][time_index, :, :, :].to_numpy()
 
     OutDataset = remap_vegetation(
             OrigDataset,
             OrigVegetation,
             NewVegetation,
-            PrevVegetation,
-            args.fill_all,
-            args.config
+            fill_all,
+            config
             )
 
-    OutDataset.to_netcdf(args.output)
+    # Decide what to do about the previous year's fractions in the restart. It
+    # can either come from what is already in the restart, or from the previous
+    # year in the land use change dataset (or a copy of the first year's 
+    # fractions, if the first index is requested).
+    # If the user wants to take previous fractions from the restart, don't need
+    # to do anything.
+    if not use_previous_fractions_from_restart:
+        if time_index == 0:
+            prev_index = 0
+        else:
+            prev_index = args.time_index - 1
+
+        PrevVegetation = Vegetation['fraction'][prev_index, :, :, :].to_numpy()
+        OutDataset["PREVIOUS YEAR SURF FRACTIONS (TILES)"] = \
+                (('veg', 'lat', 'lon'), PrevVegetation)
+        
+    OutDataset.to_netcdf(output)
+
+
+if __name__ == '__main__':
+
+    # Process command line args
+    args = _parse_args()
+
+    # Run the remapping
+    run_vegetation_remapping(args.input,
+                             args.output, 
+                             args.vegetetation_map,
+                             args.time_index,
+                             args.fill_all,
+                             args.config,
+                             args.use_previous_fractions_from_restart
+                             )
