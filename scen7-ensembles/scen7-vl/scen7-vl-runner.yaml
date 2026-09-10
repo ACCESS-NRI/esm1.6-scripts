@@ -14,16 +14,16 @@ running_branches: # List of experiment branches to run.
   - scen7-vl-1.0-r10i1p1f1
 
 nruns: # Number of runs for each branch; must match the order of running_branches.
-  - 79
-  - 79
-  - 79
-  - 79
-  - 79
-  - 79
-  - 79
-  - 79
-  - 79
-  - 79
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
 
 startfrom_restart: #cold here means the restart in config.yaml
   - cold
