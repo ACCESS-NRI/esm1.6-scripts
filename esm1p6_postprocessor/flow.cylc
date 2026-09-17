@@ -182,6 +182,20 @@
                 -m $CYLC_WORKFLOW_RUN_DIR/conf/fix_standard_name.yaml \
                 --fnregex='access-esm1p6\.\w+(?:\.\dd)?\.(?P<var>\w+)\.(?P<freq>\w{2,4})(?:\.\w+)?(?:\.\d{4})?\.nc' \
                 $REALM_POSTPROCESSED_DIR/*.nc
+
+            # Remove time:bound = time_bnds from instantaneous files
+            # First check if there are any *snap* or *fx* files
+            for pattern in ".fx." ".snap."; do
+                if compgen -G "$REALM_POSTPROCESSED_DIR/*${pattern}*nc" > /dev/null; then
+                    echo "Removing time:bounds from instantaneous files"
+                    addmeta \
+                        -v -s --update-history \
+                        -m $CYLC_WORKFLOW_RUN_DIR/conf/remove_time_bounds.yaml \
+                        $REALM_POSTPROCESSED_DIR/*${pattern}*nc
+                else
+                    echo "No ${pattern} files found to remove time:bounds from"
+                fi
+            done
         """
 
     [[validatemeta_{{ realm }}]]
@@ -197,7 +211,6 @@
     [[verifydata_{{ realm }}]]
         inherit = {{ realm | upper }}, MEDIUM_JOB
 
-        # to verify already completed data use REALM_OUTPUT_DIR instead of REALM_POSTPROCESSED_DIR
         script = """
             python ${CYLC_WORKFLOW_RUN_DIR}/bin/check_esm1p6_data.py \
                 -s $REALM_NETCDF_DIR/*.nc \
