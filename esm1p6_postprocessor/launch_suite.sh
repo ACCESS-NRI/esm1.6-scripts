@@ -15,6 +15,7 @@ DATASET_LIST=(
 #### SCRIPT
 set -e
 
+module use /g/data/hr22/modulefiles
 module load cylc
 
 for dataset_glob in "${DATASET_LIST[@]}"; do
