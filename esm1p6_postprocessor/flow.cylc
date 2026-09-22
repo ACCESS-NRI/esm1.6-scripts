@@ -290,7 +290,7 @@
             # Need to match permissions at the destination, not source
             # e.g. no write permission on original files
             rsync --archive --partial --verbose \
-                --chmod=ugo=rwX \
+                --no-o --no-g --no-p --chmod=ugo=rwX \
                 $REALM_NETCDF_DIR/*.nc "$REALM_POSTPROCESSED_DIR/"
         """
 
