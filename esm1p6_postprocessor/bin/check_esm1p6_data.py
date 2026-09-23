@@ -128,7 +128,8 @@ def get_sources_atmo(source_files, ds_dest):
     match_len = len(matching_files)
     assert match_len == 12, \
             f"There should 12 matching source files for {ds_dest.encoding['source']}" \
-            f"Not {match_len}:{'\n'.join([f.name for f in matching_files])}"
+            f"Not {match_len}:\n" \
+            "\n".join([f.name for f in matching_files])
 
     return matching_files
 
@@ -166,7 +167,8 @@ def get_sources_ice(source_files, ds_dest):
     match_len = len(matching_files)
     assert match_len == 12, \
             f"There should 12 matching source files for {ds_dest.encoding['source']}" \
-            f"Not {match_len}:{'\n'.join([f.name for f in matching_files])}"
+            f"Not {match_len}:\n" \
+            "\n".join([f.name for f in matching_files])
 
     return matching_files
 
@@ -199,7 +201,8 @@ def get_sources_ocean(source_files, ds_dest):
     match_len = len(matching_files)
     assert match_len == 1, \
         f"There should only be one matching source file for {ds_dest.encoding['source']} " \
-        f"Not {match_len}:\n{'\n'.join([f.name for f in matching_files])}"
+        f"Not {match_len}:\n" \
+        "\n".join([f.name for f in matching_files])
     
     return matching_files
 
