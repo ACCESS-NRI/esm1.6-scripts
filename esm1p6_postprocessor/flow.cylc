@@ -12,9 +12,12 @@
     {% set output_ints.vals = output_ints.vals  + [output_int] %}
 {% endfor %}
 
+# The derived yaml file is listed after other yamls on addmeta's command line,
+# fields extracted there from the CSV will override the ones in conf/metadata.yaml
 {% if RUN_ID_IN_CSV %}
-    # Since the derived yaml file is listed after other yamls supplied to addmeta,
-    # exeriment_repo there will override the one in conf/metadata.yaml
+    {% do CSV_FIELDS.append("run_id") %}
+{% endif %}
+{% if EXERIMENT_REPO_IN_CSV %}
     {% do CSV_FIELDS.append("experiment_repo") %}
 {% endif %}
 
