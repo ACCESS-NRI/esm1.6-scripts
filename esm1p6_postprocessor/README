@@ -1,0 +1,45 @@
+# ESM1.6 Output Postprocessing Cylc Suite
+
+This suite is intended to be used to post-process data output from ESM1.6 that
+was created before the changes to follow the ACCESS Ouutput Data Specifications
+were integrated with the ESM1.6 workflows (i.e. before August 2026).
+This suite is intended to be run on NCI's Gadi.
+
+## Running the Suite
+
+If one is new to cylc please follow the [instructions](https://opus.nci.org.au/spaces/DAE/pages/338002344/Cylc+Getting+Started+Guide+for+New+User) provided by NCI.
+
+### Postprocessing One Dataset
+
+To postprocess a single data update `rose-suite.conf` with the path to the dataset and run the suite as normal:
+```bash
+esm1p6_postprocessor $ cylc install .
+esm1p6_postprocessor $ cylc play esm1p6_postprocessor
+```
+
+If the data is not in the expected location then the `STORAGE` flags in `rose-suite.conf` will need to be updated.
+
+### Postprocessing Many Datasets
+The `lauch_suite.sh` script can be used to launch multiple cylc workflows to postprocess multiple datasets at once.
+To use this script update the `DATASET_LIST` variable with the paths to the datasets in question.
+Wildcards can be used in these paths and the script will look for a `output000` in each matched path to confirm it's a dataset before launching the postprocessing suite.
+
+E.g. postprocess all the datasets under `/g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/` and `/g/data/p73/archive/CMIP7/ACCESS-ESM1-6/development/`:
+```bash
+DATASET_LIST=(
+    "/g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/*"
+    "/g/data/p73/archive/CMIP7/ACCESS-ESM1-6/development/*"
+)
+```
+Any non-dataset directorys that match the wildcard should be ignored.
+
+## Options
+
+### Normal Mode
+
+By default this suite will output postprocessed files to the same location as the original dataset.
+The original files will be archived under `$DATASET_DIR/output???/$REALM/old_data_archive` unless `DELETE_OLD_DATA` is set to `True` in `rose-suite.conf`.
+
+### Scratch Mode
+To output to another location (i.e. scratch) set `SCRATCH_MODE = True` and `SCRATCH_DIR` to the desired output location in `rose-suite.conf`.
+In this mode the files in the original location will not be changed in any way.

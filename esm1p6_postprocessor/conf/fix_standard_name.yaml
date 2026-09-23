@@ -1,0 +1,14 @@
+# The atmos variables fld_s33i001 and fld_s33i001 have the incorrect
+# standard_name and units
+# Turns out there isn't actually a standard_name appropriate for this variable
+# Units should be `kg kg-1` instead of `mol mol-1`
+# This should be corrected upstream in um2nc in furture but needs to be patched
+# here
+# The following will remove the standard name from this variable if it's present
+variables:
+  fld_s33i001:
+    standard_name:
+    units: "kg kg-1"
+  fld_s33i002:
+    standard_name:
+    units: "kg kg-1"
