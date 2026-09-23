@@ -69,6 +69,11 @@
     {% include 'conf/job_directives.conf' %}
 
     [[PROCESS]]
+        pre-script = """
+            module use /g/data/vk83/modules
+            module load model-processing/2026.09.15
+        """
+
         [[[environment]]]
             DATASET_DIR = "{{ DATASET_DIR }}"
             DATASET_NAME = "$(basename $DATASET_DIR)"
@@ -90,28 +95,32 @@
     [[INSTALL]]
 
     [[build_venv]]
-        inherit = INSTALL
+        inherit = INSTALL, PROCESS, LOCAL_JOB
 
         script = """
-            # analysis3 already has dask etc. installed
-            module use /g/data/xp65/public/modules/
-            module load conda/analysis3
-
-            # Create a new venv
+            # Create a new venv for derive_dataset_metadata & fetch_schema
             python -m venv $CYLC_WORKFLOW_SHARE_DIR/venv
             source $CYLC_WORKFLOW_SHARE_DIR/venv/bin/activate
 
             # Install the needed packages
-            python -m pip install json_ref_dict addmeta splitnc
+            python -m pip install json_ref_dict pandas pyyaml
         """
 
     [[fetch_schema]]
-        inherit = INSTALL, SMALL_COPYQ_JOB
-        script = python ${CYLC_WORKFLOW_RUN_DIR}/bin/grab_schema.py $CYLC_WORKFLOW_SHARE_DIR/ACCESS-schema.json
+        inherit = INSTALL, PROCESS, SMALL_COPYQ_JOB
+        script = """
+            # Need json_ref_dict
+            source $CYLC_WORKFLOW_SHARE_DIR/venv/bin/activate
+
+            python ${CYLC_WORKFLOW_RUN_DIR}/bin/grab_schema.py $CYLC_WORKFLOW_SHARE_DIR/ACCESS-schema.json
+        """
 
     [[derive_dataset_metadata]]
         inherit = INSTALL, PROCESS, TINY_JOB
         script = """
+            # Need json_ref_dict pandas pyyaml
+            source $CYLC_WORKFLOW_SHARE_DIR/venv/bin/activate
+
             python ${CYLC_WORKFLOW_RUN_DIR}/bin/derive_dataset_metadata.py \
                 --dataset-name $DATASET_NAME \
                 --conf-csv $CYLC_WORKFLOW_RUN_DIR/conf/dataset_metadata.csv \
@@ -149,7 +158,7 @@
         script = echo "Finished installation"
 
     [[finish_cycle]]
-        inherit = PROCESS, LOCAL_JOB
+        inherit = LOCAL_JOB
         script = echo "End of processing for output$CYLC_TASK_CYCLE_POINT"
 
     [[finish_dataset]]
