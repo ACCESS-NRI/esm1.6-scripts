@@ -1,0 +1,93 @@
+model_type: access-esm1.6
+repository_url: https://github.com/ACCESS-NRI/access-esm1.6-configs/
+start_point: "77eb941dedcb69a0fd5c97854bddad80327e3414" # release-amip 1.0
+test_path: amip-ensemble # All control and perturbation experiment repositories will be created here; can be relative, absolute or ~ (user-defined)
+repository_directory: amip # Local directory name for the central repository (user-defined)
+
+control_branch_name: template-amip-1.0
+
+# this block of changes is applied to all branches
+Control_Experiment:
+  config.yaml: 
+    sync:
+      base_path:  /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/amip
+      enable: False
+    restart_freq: 1YS
+    project: p66
+    shortpath: /scratch/p66/
+  metadata.yaml:
+    url: https://github.com/ACCESS-NRI/access-esm1.6-experiments
+    long_description: |-
+      ACCESS-ESM1.6 global atmosphere-land model configuration running in co2 concentration driven mode under historical forcings. Historical forcing data including atmospheric co2 concentrations, sea surface temperatures, and sea ice concentrations are primarily sourced from the input4MIPs CMIP7 datasets.
+    frequency:
+      - fx
+      - 1yr
+      - 1mon
+      - 1day
+      - 6hr
+      - 3hr
+      - 1hr
+
+
+# this block of changes is applied to each single branch
+Perturbation_Experiment:
+  Parameter_block1:
+    branches:
+      - amip-1.0-r1i1p1f1
+      - amip-1.0-r2i1p1f1
+      - amip-1.0-r3i1p1f1
+      - amip-1.0-r4i1p1f1
+      - amip-1.0-r5i1p1f1
+      - amip-1.0-r6i1p1f1
+      - amip-1.0-r7i1p1f1
+      - amip-1.0-r8i1p1f1
+      - amip-1.0-r9i1p1f1
+      - amip-1.0-r10i1p1f1
+
+    config.yaml:
+      restart:
+       - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-concentrations-historical/historical-historical-1.1-r1i1p1f1-01409bc3/historical-historical-1.1-r1i1p1f1-01409bc3/restart127
+       - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-concentrations-historical/historical-historical-1.1-r2i1p1f1-faef2965/historical-historical-1.1-r2i1p1f1-faef2965/restart127
+       - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-concentrations-historical/historical-historical-1.1-r3i1p1f1-6052d747/historical-historical-1.1-r3i1p1f1-6052d747/restart127
+       - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-concentrations-historical/historical-historical-1.1-r4i1p1f1-35855ee5/historical-historical-1.1-r4i1p1f1-35855ee5/restart127
+       - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-concentrations-historical/historical-historical-1.1-r5i1p1f1-30c9935c/historical-historical-1.1-r5i1p1f1-30c9935c/restart127
+       - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-concentrations-historical/historical-historical-1.1-r6i1p1f1-4742e54d/historical-historical-1.1-r6i1p1f1-4742e54d/restart127
+       - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-concentrations-historical/historical-historical-1.1-r7i1p1f1-2399b4a4/historical-historical-1.1-r7i1p1f1-2399b4a4/restart127
+       - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-concentrations-historical/historical-historical-1.1-r8i1p1f1-ab5c6b2a/historical-historical-1.1-r8i1p1f1-ab5c6b2a/restart127
+       - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-concentrations-historical/historical-historical-1.1-r9i1p1f1-db6902f6/historical-historical-1.1-r9i1p1f1-db6902f6/restart127
+       - /g/data/p73/archive/CMIP7/ACCESS-ESM1-6/production/ensemble-concentrations-historical/historical-historical-1.1-r10i1p1f1-aaca3142/historical-historical-1.1-r10i1p1f1-aaca3142/restart127
+
+    metadata.yaml:
+      name:
+        - amip-r1i1p1f1-2026.09.23
+        - amip-r2i1p1f1-2026.09.23
+        - amip-r3i1p1f1-2026.09.23
+        - amip-r4i1p1f1-2026.09.23
+        - amip-r5i1p1f1-2026.09.23
+        - amip-r6i1p1f1-2026.09.23
+        - amip-r7i1p1f1-2026.09.23
+        - amip-r8i1p1f1-2026.09.23
+        - amip-r9i1p1f1-2026.09.23
+        - amip-r10i1p1f1-2026.09.23
+      parent_experiment: 
+        - 01409bc3-2ad3-4d0e-9552-074979ac631d
+        - faef2965-5944-4ffc-b85c-d998285b7960
+        - 6052d747-304e-436b-9543-ee6ecdec8518
+        - 35855ee5-a0c9-4264-8716-4bc89c49714a
+        - 30c9935c-e547-4486-b038-ee1956d17d57
+        - 4742e54d-3303-4cb0-b5cc-5e9add419fba
+        - 2399b4a4-16f1-471b-8a1f-d0e37ebd6dc7
+        - ab5c6b2a-2045-473c-99d9-1dee78462b8f
+        - db6902f6-e63a-4951-9ff0-f5fb0a5f5236
+        - aaca3142-20d2-43d4-94ab-c6417fd73f3d
+      parent_experiment_branch_commit:
+        - 645f5b6c67a277e719f266d999409b14709794ff
+        - 39aa108d89f7f697ef45da2bbf7e96075c2ed971
+        - bc25a0c8037f92b6c921b4704563636c3c81ca3e
+        - 5f36d3a028b36735b9f42397e88aa31738b20599
+        - 3ca7d372302b89ec37f4102727aa7ca8bb6582fa
+        - 3770ed07e30c0b3ffa195592c38de2802c456d4c
+        - d35d6385d9dc94de0275f7816ab4f077d48cffa7
+        - 75927bf62f9320c2da39ceb5eeacf242038dd8cd
+        - aa757454c8e9ec23b7a010cf6fec213199a1d51f
+        - 688278607692c66478f22215c09e87acf75cda0a
