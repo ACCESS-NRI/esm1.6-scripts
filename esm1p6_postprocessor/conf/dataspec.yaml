@@ -8,7 +8,8 @@ global:
   date_metadata_modified: "{{ __datetime__.now }}"
   # date_modified refers to data but we just modified the files
   date_modified: "{{ __datetime__.now }}"
-  experiment_repo: "{{ metadata.url }}"
+  # experiment_repo is extracted from dataset_metadata.csv
+  # experiment_repo: "{{ metadata.url }}"
   experiment_uuid: "{{ metadata.experiment_uuid }}"
   filename: "{{ __file__.name }}"
   frequency: "{{ __file__.freq }}"
