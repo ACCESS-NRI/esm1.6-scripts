@@ -17,7 +17,7 @@ def get_metadata(dataset_name, csv_path):
         'experiment_uuid',
         'parent_experiment',
         'parent_experiment_id',
-        'branch_time_in_parent',
+        'parent_experiment_branch_time',
         'experiment_repo',
         'run_id',
         'base_configuration',
