@@ -12,17 +12,7 @@ import pandas as pd
 import yaml
 
 
-def get_metadata(dataset_name, csv_path):
-    cols_to_use = [
-        'experiment_uuid',
-        'parent_experiment',
-        'parent_experiment_id',
-        'parent_experiment_branch_time',
-        'experiment_repo',
-        'run_id',
-        'base_configuration',
-    ]
-
+def get_metadata(dataset_name, csv_path, cols_to_use):
     df = pd.read_csv(csv_path, delimiter='\t')
     row = df[df['experiment_name']==dataset_name]
 
@@ -60,6 +50,12 @@ def parse_args():
         required=True,
         help="The path to the output yaml"
     )
+    parser.add_argument(
+        "-f", "--fields",
+        nargs="+",
+        required=True,
+        help="A list of fields/columns to extract from the provided CSV into the metadataconf"
+    )
 
     return parser.parse_args()
 
@@ -67,7 +63,7 @@ def parse_args():
 def main():
     args = parse_args()
 
-    metadata = get_metadata(args.dataset_name, args.conf_csv)
+    metadata = get_metadata(args.dataset_name, args.conf_csv, args.fields)
 
     for k, v in metadata.items():
         assert not pd.isna(v), f"Missing metadata {k} for {args.dataset_name}"

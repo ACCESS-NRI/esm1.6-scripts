@@ -12,6 +12,12 @@
     {% set output_ints.vals = output_ints.vals  + [output_int] %}
 {% endfor %}
 
+{% if RUN_ID_IN_CSV %}
+    # Since the derived yaml file is listed after other yamls supplied to addmeta,
+    # exeriment_repo there will override the one in conf/metadata.yaml
+    {% do CSV_FIELDS.append("experiment_repo") %}
+{% endif %}
+
 [meta]
     title = ESM1.6 Data Postprocessing
 
@@ -98,12 +104,12 @@
         inherit = INSTALL, PROCESS, LOCAL_JOB
 
         script = """
-            # Create a new venv for derive_dataset_metadata & fetch_schema
+            # Create a new venv for fetch_schema
             python -m venv $CYLC_WORKFLOW_SHARE_DIR/venv
             source $CYLC_WORKFLOW_SHARE_DIR/venv/bin/activate
 
             # Install the needed packages
-            python -m pip install json_ref_dict pandas pyyaml
+            python -m pip install json_ref_dict
         """
 
     [[fetch_schema]]
@@ -118,14 +124,21 @@
     [[derive_dataset_metadata]]
         inherit = INSTALL, PROCESS, TINY_JOB
         script = """
-            # Need json_ref_dict pandas pyyaml
-            source $CYLC_WORKFLOW_SHARE_DIR/venv/bin/activate
-
             python ${CYLC_WORKFLOW_RUN_DIR}/bin/derive_dataset_metadata.py \
                 --dataset-name $DATASET_NAME \
                 --conf-csv $CYLC_WORKFLOW_RUN_DIR/conf/dataset_metadata.csv \
-                --output-yaml $CYLC_WORKFLOW_SHARE_DIR/dataset_metadata.yaml
+                --output-yaml $CYLC_WORKFLOW_SHARE_DIR/dataset_metadata.yaml \
+                --fields $CSV_FIELDS
         """
+
+        # Use analysis3 for pandas & pyyaml
+        pre-script = """
+            module use /g/data/xp65/public/modules
+            module load conda/analysis3
+        """
+
+        [[[environment]]]
+            CSV_FIELDS = {{ CSV_FIELDS | join(" ") }}
 
     [[copy_other_files]]
         inherit = PROCESS, MEDIUM_COPYQ_JOB
