@@ -1,0 +1,7 @@
+global:
+  date_metadata_modified: "{{ __datetime__.now }}"
+
+variables:
+  time:
+    # Remove bounds for instantaneous atmosphere and fx ocean files
+    bounds:
