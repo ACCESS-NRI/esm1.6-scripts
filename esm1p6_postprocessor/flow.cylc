@@ -67,6 +67,8 @@
 {% endfor %}
 
             FINISH_REALM:succeed-all => finish_cycle
+
+            housekeep[-P1] & finish_cycle => housekeep
         """
 
         # Final cycle point
@@ -180,6 +182,13 @@
     [[finish_dataset]]
         inherit = LOCAL_JOB
         script = echo "End of processing for {{ DATASET_DIR }}"
+
+    [[housekeep]]
+        inherit = LOCAL_JOB
+        script = rose task-run -v
+        [[[environment]]]
+            # Tarball up older logs
+            ARCHIVE_DELAY = -P10
 
     #### SHARED
 {% for realm in REALMS %}
